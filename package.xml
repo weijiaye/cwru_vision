@@ -1,0 +1,22 @@
+
+<package>
+  <name>cwru_vision</name>
+  <version>0.0.1</version>
+  <description>
+    This meta package provides a common set of vision related features available for cwru students
+  </description>
+  <maintainer email="rcj33@case.edu">Russell Jackson</maintainer>
+  <license>BSD</license>
+  
+  <author>Russell Jackson</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+ 
+  <run_depend>message_runtime</run_depend>
+  <run_depend>rospy</run_depend>
+
+ <export>
+   <metapackage />
+ </export>
+ </package>
