@@ -113,6 +113,10 @@ namespace cv_3d {
         Point2d pt0(0.0,0.0);
         Point2d pt1(0.0,0.0);
 
+        //pt0 is the endpoint in the positive direction
+        //pt1 is the endpoint in the negative direction
+        // (this is important for the torque direction.
+
         if(jac.needed())
         {
 
@@ -125,6 +129,7 @@ namespace cv_3d {
             pt0 = cv_projective::reprojectPoint(end0Pt,P,cv::Mat(),cv::Mat(),jac_0);
             pt1 = cv_projective::reprojectPoint(end1Pt,P,cv::Mat(),cv::Mat(),jac_1);
         }
+
 
 
         Mat projected0 = P*end0;
@@ -141,11 +146,19 @@ namespace cv_3d {
         double radEst0 = cylinderIn.radius*fEst/distEst0;
         double radEst1 = cylinderIn.radius*fEst/distEst1;
 
+
         //create the set of 4 points.
         Point corners[4];
 
         Point2d dir = pt1-pt0;
-        dir *= (1/norm(dir));
+
+        double dirLength = norm(dir);
+
+        if(dirLength < radEst0)
+        {
+            dir *= (1/norm(dir));
+
+        }
 
         Point2d radDir(-dir.y,dir.x);
 
@@ -166,7 +179,14 @@ namespace cv_3d {
 
         /*
          * @todo create the local jacobian
+         *  define the jacobian in terms of a rotation and translation. due to the position of the points.
+         *  2d pose derivative.
          */
+        if(jac.needed())
+        {
+            jac.create(3,5);
+            //finish the compilation
+        }
 
         return minAreaRect(cornersV);
     }
