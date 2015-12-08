@@ -14,6 +14,56 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+catkin_package(
+    INCLUDE_DIRS include
+    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib
+    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
+    #   DEPENDS system_lib
+)
+
+SET(LIB_TYPE STATIC) 
+
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
+
+add_library(circle_detection_lib
+    src/circle_detection.cpp
+)
+
+add_library(block_detection_lib
+    src/block_detection.cpp
+)
+
+add_library(opencv_3d_lib
+    src/opencv_geometry_3d.cpp
+)
+
+add_library(opencv_ui_lib
+    src/opencv_ui.cpp
+)
+
+add_library(opencv_local_lib
+    src/opencv_local.cpp
+)
+
+add_library(opencv_rot_lib
+    src/cv_rotations.cpp
+)
+
+add_library(projective_lib
+    src/projective_geometry.cpp
+)
+
+
+
+
+
+
+
 
 
 #catkin_package(
