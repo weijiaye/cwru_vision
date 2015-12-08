@@ -384,7 +384,7 @@ namespace cv_3d {
         Moments fy_l(moments(wM_ly));
 
 
-        double tau_l(fx_l.m01-fx_l.m00*coilBox_l.center.y-fy_l.m10-fy_l.m00*coilBox_l.center.y);
+        double tau_l(fy_l.m10-fy_l.m00*coilBox_l.center.x-fx_l.m01+fx_l.m00*coilBox_l.center.y);
 
         //compare the input and output results...
         //Do this using a external function.
