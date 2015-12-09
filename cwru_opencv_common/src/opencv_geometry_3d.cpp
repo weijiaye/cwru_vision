@@ -89,18 +89,28 @@ namespace cv_3d {
             localDir= computeNormalFromSpherical(cylinderIn.theta,cylinderIn.phi);
         }
 
-
+        //negative normal point.
         Mat end0(4,1,CV_64FC1);
         end0.at<double>(0) = cylinderIn.center.x-localDir.x*cylinderIn.height/2;
         end0.at<double>(1) = cylinderIn.center.y-localDir.y*cylinderIn.height/2;
         end0.at<double>(2) = cylinderIn.center.z-localDir.z*cylinderIn.height/2;
         end0.at<double>(3) = 1.0;
 
+        //positive normal point.
         Mat end1(4,1,CV_64FC1);
         end1.at<double>(0) = cylinderIn.center.x+localDir.x*cylinderIn.height/2;
         end1.at<double>(1) = cylinderIn.center.y+localDir.y*cylinderIn.height/2;
         end1.at<double>(2) = cylinderIn.center.z+localDir.z*cylinderIn.height/2;
         end1.at<double>(3) = 1.0;
+
+        Mat dEnd0(3,5,CV_64FC1);
+        Mat dEnd1(3,5,CV_64FC1);
+
+        ((Mat) (jac_dir*cylinderIn.height/2)).copyTo(dEnd1.colRange(3,5));
+        ((Mat) (jac_dir*-cylinderIn.height/2)).copyTo(dEnd0.colRange(3,5));
+
+        ((Mat)Mat::eye(3,3,CV_64FC1)).copyTo(dEnd0.rowRange(0,3));
+        ((Mat)Mat::eye(3,3,CV_64FC1)).copyTo(dEnd1.rowRange(0,3));
 
 
         Point3d end0Pt(cylinderIn.center-localDir*(cylinderIn.height/2.0));
@@ -131,7 +141,6 @@ namespace cv_3d {
         }
 
 
-
         Mat projected0 = P*end0;
         Mat projected1 = P*end1;
 
@@ -154,6 +163,8 @@ namespace cv_3d {
 
         double dirLength = norm(dir);
 
+
+        //draw the sphere at this point.
         if(dirLength < radEst0)
         {
             dir *= (1/norm(dir));
@@ -184,8 +195,21 @@ namespace cv_3d {
          */
         if(jac.needed())
         {
-            jac.create(3,5);
-            //finish the compilation
+            //center point derivative
+            Mat jac_center(2,5,CV_64FC1);
+
+            //derivative of the center.
+            jac_center =(jac_1+jac_0)*jac_dir*0.5;
+
+            Mat jac_end_0 = jac_0*jac_dir;
+            Mat jac_end_1 = jac_1*jac_dir;
+           
+            //derivative of the end points:
+            //dE0 =
+
+            jac.create(6,5,CV_64FC1);
+
+
         }
 
         return minAreaRect(cornersV);
