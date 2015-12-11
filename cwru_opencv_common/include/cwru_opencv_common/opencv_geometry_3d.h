@@ -45,25 +45,24 @@ namespace cv_3d{
     /**
      * @brief This is a cylinder in 3d space
      */
-    struct cylinder{
-
-        cv::Point3d center;
-        double theta;
-        double phi;
-        double height;
-        double radius;
-
-        // constructor
-        cylinder( const cv::Point3d& center_ = cv::Point3d(0.0,0.0,0.0), double theta_=0.0 , double phi_=0.0 , double height_=0.0 ,double radius_=0.0 ):
-        center(center_),
-        theta(theta_),
-        phi(phi_),
-        height(height_),
-        radius(radius_)
-        {
-        }
-
-    };
+struct cylinder
+{
+    cv::Point3d center;
+    double theta;
+    double phi;
+    double height;
+    double radius;
+    // constructor
+    cylinder(const cv::Point3d& center_ = cv::Point3d(0.0, 0.0, 0.0), double theta_ = 0.0,
+             double phi_ = 0.0, double height_ = 0.0, double radius_ = 0.0):
+    center(center_),
+    theta(theta_),
+    phi(phi_),
+    height(height_),
+    radius(radius_)
+    {
+    }
+};
 
     cylinder baseCylinder();
 
@@ -71,8 +70,8 @@ namespace cv_3d{
     void iterateSphere_3d(const cv::Mat & , sphere & , const cv::Mat& , const cv::Mat&);
 
 
-    cv::Rect renderSphere(cv::Mat &,const sphere , const cv::Mat &, cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray()  );
-    cv::RotatedRect renderCylinder(cv::Mat &,const cylinder, const cv::Mat &,cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray());
+    cv::Rect renderSphere(cv::Mat &,const sphere& , const cv::Mat &, cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray()  );
+    cv::RotatedRect renderCylinder(cv::Mat &,const cylinder&, const cv::Mat &,cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray());
 
     void optimizeSphere(sphere &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false  );
 
