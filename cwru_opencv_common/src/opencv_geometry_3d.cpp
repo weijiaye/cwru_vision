@@ -11,7 +11,7 @@ namespace cv_3d {
 
 
 
-    Rect renderSphere(cv::Mat & inputImage,const sphere sphereIn, const cv::Mat &P, OutputArray jac )
+    Rect renderSphere(cv::Mat & inputImage,const sphere sphereIn, const cv::Mat &P, OutputArray centerPt,  OutputArray jac )
     {
         //project the center;
         Point2d center(0.0,0.0);
@@ -59,6 +59,17 @@ namespace cv_3d {
         Point drawCenter(center.x,center.y);
         int radius = (int) radEst;
         //ROS_INFO("Sphere Radius is %f : %d\n",radEst,radius);
+        if(centerPt.needed())
+        {
+            ROS_INFO("Getting the center Pt and Radius");
+            centerPt.create(3,1,CV_64FC1);
+            Mat output(centerPt.getMat());
+
+            output.at<double>(0) = center.x;
+            output.at<double>(1) = center.y;
+            output.at<double>(2) = radEst;
+
+        }
 
         //default is a filled white circle.
         circle(inputImage,drawCenter,radius,Scalar(255,255,255),-1);
@@ -72,7 +83,7 @@ namespace cv_3d {
         return boundingBox;
     }
 
-    RotatedRect renderCylinder(cv::Mat & inputImage,const cylinder cylinderIn, const cv::Mat &P, OutputArray jac  )
+    RotatedRect renderCylinder(cv::Mat & inputImage,const cylinder cylinderIn, const cv::Mat &P,OutputArray tips, OutputArray jac  )
     {
 
 
@@ -89,6 +100,8 @@ namespace cv_3d {
             localDir= computeNormalFromSpherical(cylinderIn.theta,cylinderIn.phi);
         }
 
+        ROS_INFO("Computing JAC");
+
         //negative normal point.
         Mat end0(4,1,CV_64FC1);
         end0.at<double>(0) = cylinderIn.center.x-localDir.x*cylinderIn.height/2;
@@ -103,14 +116,6 @@ namespace cv_3d {
         end1.at<double>(2) = cylinderIn.center.z+localDir.z*cylinderIn.height/2;
         end1.at<double>(3) = 1.0;
 
-        Mat dEnd0(3,5,CV_64FC1);
-        Mat dEnd1(3,5,CV_64FC1);
-
-        ((Mat) (jac_dir*cylinderIn.height/2)).copyTo(dEnd1.colRange(3,5));
-        ((Mat) (jac_dir*-cylinderIn.height/2)).copyTo(dEnd0.colRange(3,5));
-
-        ((Mat)Mat::eye(3,3,CV_64FC1)).copyTo(dEnd0.rowRange(0,3));
-        ((Mat)Mat::eye(3,3,CV_64FC1)).copyTo(dEnd1.rowRange(0,3));
 
 
         Point3d end0Pt(cylinderIn.center-localDir*(cylinderIn.height/2.0));
@@ -140,7 +145,7 @@ namespace cv_3d {
             pt1 = cv_projective::reprojectPoint(end1Pt,P,cv::Mat(),cv::Mat(),jac_1);
         }
 
-
+      
         Mat projected0 = P*end0;
         Mat projected1 = P*end1;
 
@@ -178,6 +183,25 @@ namespace cv_3d {
         Point2d c2 = pt1-radDir*radEst1;
         Point2d c3 = pt0-radDir*radEst0;
 
+        if(tips.needed())
+        {
+
+            tips.create(6,1,CV_64FC1);
+            Mat tipMat(tips.getMat());
+
+            tipMat.at<double>(0) = pt0.x;
+            tipMat.at<double>(1) = pt0.x;
+
+            tipMat.at<double>(2) = radEst0;
+
+            tipMat.at<double>(3) = pt1.x;
+            tipMat.at<double>(4) = pt1.y;
+
+            tipMat.at<double>(5) = radEst1;
+
+
+        }
+
         std::vector< Point > cornersV;
         cornersV.resize(4);
         cornersV[0] = corners[0] = Point(c0.x,c0.y);
@@ -195,21 +219,31 @@ namespace cv_3d {
          */
         if(jac.needed())
         {
+            ROS_INFO("Making tip Mat");
+            Mat dEnd0(3,5,CV_64FC1);
+            Mat dEnd1(3,5,CV_64FC1);
+
+            ((Mat) (jac_dir*cylinderIn.height/2)).copyTo(dEnd1.colRange(3,5));
+            ((Mat) (jac_dir*-cylinderIn.height/2)).copyTo(dEnd0.colRange(3,5));
+
+        ((Mat)Mat::eye(3,3,CV_64FC1)).copyTo(dEnd0.colRange(0,3));
+        ((Mat)Mat::eye(3,3,CV_64FC1)).copyTo(dEnd1.colRange(0,3));
+
+            
+            ROS_INFO("Making output Jac Mat");
             //center point derivative
-            Mat jac_center(2,5,CV_64FC1);
+            //derivative is a function of the cylinderical motion.
+            Mat jac_ends(4,5,CV_64FC1);
 
-            //derivative of the center.
-            jac_center =(jac_1+jac_0)*jac_dir*0.5;
+            //combine the two derivatives.
+            ((Mat) (jac_0*dEnd0)).copyTo((Mat) jac_ends.rowRange(0,2));
+            ((Mat) (jac_1*dEnd1)).copyTo((Mat) jac_ends.rowRange(2,4));
 
-            Mat jac_end_0 = jac_0*jac_dir;
-            Mat jac_end_1 = jac_1*jac_dir;
-           
-            //derivative of the end points:
-            //dE0 =
+             ROS_INFO("Making output Jac Mat");
+            jac.create(4,5,CV_64FC1);
 
-            jac.create(6,5,CV_64FC1);
-
-
+            jac_ends.copyTo(jac.getMat());
+            ROS_INFO("Finished jacobian generation");
         }
 
         return minAreaRect(cornersV);
@@ -230,10 +264,10 @@ namespace cv_3d {
         Mat mask_r(Mat::zeros(segmentedImage.size(),segmentedImageFloat.type()));
 
         Mat jac_l,jac_r;
+        Mat center_l,center_r;
+        Rect sphereInBox_l = renderSphere(mask_l, sphereIn , P_l, center_l ,jac_l );
 
-        Rect sphereInBox_l = renderSphere(mask_l, sphereIn , P_l,jac_l );
-
-        Rect sphereInBox_r = renderSphere(mask_r, sphereIn , P_r,jac_r);
+        Rect sphereInBox_r = renderSphere(mask_r, sphereIn , P_r, center_r ,jac_r);
 
         //update the sphereIn sphere:
         Point2d pt_l = cv_projective::reprojectPoint(sphereIn.center,P_l,Mat(),Mat(),jac_l);
@@ -332,9 +366,9 @@ namespace cv_3d {
         Mat mask_r = Mat::zeros(segmentedImage.size(),segmentedImageFloat.type());
 
         Mat jac_l,jac_r;
-
-        RotatedRect coilBox_l(renderCylinder(mask_l , cylinderIn, P_l,jac_l));
-        RotatedRect coilBox_r(renderCylinder(mask_r , cylinderIn, P_r,jac_r));
+        Mat tips_l,tips_r;
+        RotatedRect coilBox_l(renderCylinder(mask_l , cylinderIn, P_l,tips_l , jac_l));
+        RotatedRect coilBox_r(renderCylinder(mask_r , cylinderIn, P_r,tips_r ,jac_r));
 
         Point2d center_l(coilBox_l.center.x,coilBox_l.center.y);
         Point2d center_r(coilBox_r.center.x,coilBox_r.center.y);
@@ -396,6 +430,7 @@ namespace cv_3d {
 
         std::vector < std::vector < Point > > contours_l;
 
+        ROS_INFO("why no works");
 
         findContours(binary_l,contours_l,noArray(),CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE,coilRect_l.tl());
 
@@ -415,11 +450,22 @@ namespace cv_3d {
         Scharr(weightedMask_r,w_rx,weightedMask_r.depth(),1,0);
         Scharr(weightedMask_r,w_ry,weightedMask_r.depth(),0,1);
 
-        Mat wM_rx, wM_ry;
-        Mat wM_lx, wM_ly;
+        Mat wM_rx(w_lx.clone()), wM_ry(w_lx.clone());
+        Mat wM_lx(w_lx.clone()), wM_ly(w_lx.clone());
+
+        ROS_INFO("why no works");
+
+        Convert the ROI to an  char
 
         w_rx.copyTo(wM_rx,ROI_r);
         w_ry.copyTo(wM_ry,ROI_r);
+
+
+        w_lx.copyTo(wM_lx,ROI_l);
+        w_ly.copyTo(wM_ly,ROI_l);
+
+
+        ROS_INFO("why no works");
 
         Moments fx_r(moments(wM_rx));
         Moments fy_r(moments(wM_ry));
@@ -430,68 +476,93 @@ namespace cv_3d {
 
         double tau_l(fy_l.m10-fy_l.m00*coilBox_l.center.x-fx_l.m01+fx_l.m00*coilBox_l.center.y);
 
+        
+        double tau_r(fy_r.m10-fy_r.m00*coilBox_r.center.x-fx_r.m01+fx_r.m00*coilBox_r.center.y);
+
+
+        //using the tip positions, infer a velocity in both left and right.
+
+        double tauGain(0.0005); //start small.
+        double forceGain(0.0005);
+
+        //left image:
+
+        Point3d omega_l(0.0,0.0,tauGain*tau_l);
+
+        Point3d vel_l(fx_l.m00*forceGain,fy_l.m00*forceGain,0.0);
+
+        Point3d tip0l(tips_l.at<double>(0),tips_l.at<double>(1),0.0);
+        Point3d tip1l(tips_l.at<double>(3),tips_l.at<double>(4),0.0);
+
+        Point3d centerl(tip0l*0.5+tip1l*0.5);
+
+        Point3d vector0l(tip0l-centerl);
+        Point3d vector1l(tip1l-centerl);
+
+
+        Point3d vel_0l(omega_l.cross(vector0l)+vel_l);
+        Point3d vel_1l(omega_l.cross(vector1l)+vel_l);
+
+
+        //right image:
+
+
+        Point3d omega_r(0.0,0.0,tauGain*tau_r);
+
+        Point3d vel_r(fx_r.m00*forceGain,fy_r.m00*forceGain,0.0);
+
+        Point3d tip0r(tips_r.at<double>(0),tips_r.at<double>(1),0.0);
+        Point3d tip1r(tips_r.at<double>(3),tips_r.at<double>(4),0.0);
+
+        Point3d centerr(tip0r*0.5+tip1r*0.5);
+
+        Point3d vector0r(tip0r-centerr);
+        Point3d vector1r(tip1r-centerr);
+
+
+        Point3d vel_0r(omega_r.cross(vector0r)+vel_r);
+        Point3d vel_1r(omega_r.cross(vector1r)+vel_r);
+
+
         //compare the input and output results...
         //Do this using a external function.
 
         //find the best fit rotated rect here:
 
-      Moments mom_l = moments(weightedMask_l);
-      Moments mom_r = moments(weightedMask_r);
+        //Couple the two jacobian:
+
+        Mat fullJac(8,5,CV_64FC1);
+
+        jac_l.copyTo(fullJac.rowRange(0,4));
+        jac_r.copyTo(fullJac.rowRange(4,8));
+
+        Mat imageOffset(8,1,CV_64FC1);
+
+        imageOffset.at<double>(0) = vel_0l.x;
+        imageOffset.at<double>(1) = vel_0l.y;
+        imageOffset.at<double>(2) = vel_1l.x;
+        imageOffset.at<double>(3) = vel_1l.y;
+
+        imageOffset.at<double>(5) = vel_0r.x;
+        imageOffset.at<double>(6) = vel_0r.y;
+        imageOffset.at<double>(7) = vel_1r.x;
+        imageOffset.at<double>(8) = vel_1r.y;
+
+        Mat offsetVector(fullJac.inv(DECOMP_SVD)*imageOffset);
 
 
-//      Moments mom_l = moments(weightedMask_l);
-//      Moments mom_r = moments(weightedMask_r);
-
-
-
-      Mat pointOffsets(4,1,CV_64FC1);
-
-      pointOffsets.at<double>(0) = (mom_l.m10/mom_l.m00)+coilRect_l.x-center_l.x;
-      pointOffsets.at<double>(1) = (mom_l.m01/mom_l.m00)+coilRect_l.y-center_l.y;
-
-      pointOffsets.at<double>(2) = (mom_r.m10/mom_r.m00)+coilRect_r.x-center_r.x;
-      pointOffsets.at<double>(3) = (mom_r.m01/mom_r.m00)+coilRect_r.y-center_r.y;
-
-      Mat direction_l(2,2,CV_64FC1);
-      Mat direction_r(2,2,CV_64FC1);
-
-      //instead of using the momensts, look at using the closest fit base
-
-      //This matrix gives the eigen vector basis directions.
-      direction_l.at<double>(0) = mom_l.nu20;
-      direction_l.at<double>(1) = mom_l.nu11;
-      direction_l.at<double>(2) = mom_l.nu11;
-      direction_l.at<double>(3) = mom_l.nu02;
-
-      direction_r.at<double>(0) = mom_r.nu20;
-      direction_r.at<double>(1) = mom_r.nu11;
-      direction_r.at<double>(2) = mom_r.nu11;
-      direction_r.at<double>(3) = mom_r.nu02;
-
-      Mat eigenVals_l(2,1,CV_64FC1);
-      Mat eigenVects_l(2,2,CV_64FC1);
-
-      Mat eigenVals_r(2,1,CV_64FC1);
-      Mat eigenVects_r(2,2,CV_64FC1);
-
-      eigen(direction_l,eigenVals_l,eigenVects_l);
-      eigen(direction_r,eigenVals_r,eigenVects_r);
-
-
+        Point3d cylinder_offset(offsetVector.at<double>(0),offsetVector.at<double>(1),offsetVector.at<double>(2));
+        double thetaOffset(offsetVector.at<double>(3));
+        double phiOffset(offsetVector.at<double>(4));
       if(displayPause)
       {
-          ROS_INFO("The eigens in the left image are:");
-          ROS_INFO_STREAM(eigenVals_l);
-          ROS_INFO_STREAM(eigenVects_l);
 
 
-          ROS_INFO("The eigens in the right image are:");
-          ROS_INFO_STREAM(eigenVals_r);
-          ROS_INFO_STREAM(eigenVects_r);
+          ROS_INFO("The offset of the left points are  < %f , %f  > and  < %f , %f  >\n", vel_0l.x,vel_0l.y, vel_1l.x, vel_1l.y);
+          ROS_INFO("The offset of the right points are  < %f , %f  > and  < %f , %f  >\n", vel_0r.x,vel_0r.y, vel_1r.x, vel_1r.y);
 
 
-          ROS_INFO("The center offset (left) is < %f , %f  >\n", pointOffsets.at<double>(0),pointOffsets.at<double>(1));
-          ROS_INFO("The center offset (right) is < %f , %f  >\n", pointOffsets.at<double>(1),pointOffsets.at<double>(3));
+          ROS_INFO("The Cylinder update is <%f m, %f m, %f m, %f rads, %f rads > \n", cylinder_offset.x,cylinder_offset.z, cylinder_offset.z, thetaOffset,phiOffset);
 
 
           Mat segDisp_l(segmentedImageFloat_l*(1.0/255.0));
@@ -508,12 +579,17 @@ namespace cv_3d {
             destroyWindow("weighted_l");
             destroyWindow("weighted_r");
       }
+
+      
       //look at the twist from the original image to the new image.
       //which eigenvector is bigger?
       //find the largest eigenvector.
 
       //largest left eigen:
       //leftRow = 
+      cylinderIn.center +=cylinder_offset;
+      cylinderIn.theta += thetaOffset;
+      cylinderIn.phi += phiOffset;
 
     }
 

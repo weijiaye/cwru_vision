@@ -71,8 +71,8 @@ namespace cv_3d{
     void iterateSphere_3d(const cv::Mat & , sphere & , const cv::Mat& , const cv::Mat&);
 
 
-    cv::Rect renderSphere(cv::Mat &,const sphere , const cv::Mat &, cv::OutputArray = cv::noArray()  );
-    cv::RotatedRect renderCylinder(cv::Mat &,const cylinder, const cv::Mat &,  cv::OutputArray = cv::noArray());
+    cv::Rect renderSphere(cv::Mat &,const sphere , const cv::Mat &, cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray()  );
+    cv::RotatedRect renderCylinder(cv::Mat &,const cylinder, const cv::Mat &,cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray());
 
     void optimizeSphere(sphere &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false  );
 
