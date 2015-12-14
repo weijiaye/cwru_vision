@@ -233,7 +233,7 @@ namespace cv_3d
             Mat tipMat(tips.getMat());
 
             tipMat.at<double>(0) = pt0.x;
-            tipMat.at<double>(1) = pt0.x;
+            tipMat.at<double>(1) = pt0.y;
 
             tipMat.at<double>(2) = radEst0;
 
@@ -515,21 +515,21 @@ namespace cv_3d
         Moments fy_l(moments(wM_ly));
 
 
-        double tau_l(fy_l.m10-fy_l.m00*coilBox_l.center.x-fx_l.m01+fx_l.m00*coilBox_l.center.y);
+        double tau_l((fy_l.m10-fy_l.m00*coilBox_l.center.x-fx_l.m01+fx_l.m00*coilBox_l.center.y)/(leftSum.val[0]));
 
-        double tau_r(fy_r.m10-fy_r.m00*coilBox_r.center.x-fx_r.m01+fx_r.m00*coilBox_r.center.y);
+        double tau_r((fy_r.m10-fy_r.m00*coilBox_r.center.x-fx_r.m01+fx_r.m00*coilBox_r.center.y)/(rightSum.val[0]));
 
 
         // Using the tip positions, infer a velocity in both left and right.
 
-        double tauGain(0.0000005/(leftSum.val[0]));  // start small.
-        double forceGain(0.0005/(leftSum.val[0]));
+        double tauGain(0.0005);  // start small.
+        double forceGain(0.05);
 
         // left image update:
 
         Point3d omega_l(0.0, 0.0, tauGain*tau_l);
 
-        Point3d vel_l(fx_l.m00*forceGain, fy_l.m00*forceGain, 0.0);
+        Point3d vel_l(-fx_l.m00*forceGain/(leftSum.val[0]), -fy_l.m00*forceGain/(leftSum.val[0]), 0.0);
 
         Point3d tip0l(tips_l.at<double>(0), tips_l.at<double>(1), 0.0);
         Point3d tip1l(tips_l.at<double>(3), tips_l.at<double>(4), 0.0);
@@ -549,7 +549,7 @@ namespace cv_3d
 
         Point3d omega_r(0.0, 0.0, tauGain*tau_r);
 
-        Point3d vel_r(fx_r.m00*forceGain, fy_r.m00*forceGain, 0.0);
+        Point3d vel_r(-fx_r.m00*forceGain/(rightSum.val[0]), -fy_r.m00*forceGain/(rightSum.val[0]), 0.0);
 
         Point3d tip0r(tips_r.at<double>(0), tips_r.at<double>(1), 0.0);
         Point3d tip1r(tips_r.at<double>(3), tips_r.at<double>(4), 0.0);
@@ -583,49 +583,75 @@ namespace cv_3d
         imageOffset.at<double>(2) = vel_1l.x;
         imageOffset.at<double>(3) = vel_1l.y;
 
-        imageOffset.at<double>(5) = vel_0r.x;
-        imageOffset.at<double>(6) = vel_0r.y;
-        imageOffset.at<double>(7) = vel_1r.x;
-        imageOffset.at<double>(8) = vel_1r.y;
+        imageOffset.at<double>(4) = vel_0r.x;
+        imageOffset.at<double>(5) = vel_0r.y;
+        imageOffset.at<double>(6) = vel_1r.x;
+        imageOffset.at<double>(7) = vel_1r.y;
 
         // Scale the result by 1/100...
-        Mat offsetVector(fullJac.inv(DECOMP_SVD)*imageOffset*0.01);
+        Mat offsetVector(fullJac.inv(DECOMP_SVD)*imageOffset);
 
 
         Point3d cylinder_offset(offsetVector.at<double>(0),offsetVector.at<double>(1),offsetVector.at<double>(2));
         double thetaOffset(offsetVector.at<double>(3));
         double phiOffset(offsetVector.at<double>(4));
-      if(displayPause)
-      {
+        if(displayPause)
+        {
+            ROS_INFO("Image total weight sum Left: %f . Right: %f > \n", leftSum.val[0], rightSum.val[0]);
+            ROS_INFO("Force in the left : < %f , %f > \n", fx_l.m00, fy_l.m00);
+            ROS_INFO("Force in the right : < %f , %f > \n", fx_r.m00, fy_r.m00);
+            ROS_INFO("Left torque: < %f > \n", tau_l);
+            ROS_INFO("Right torque: < %f > \n", tau_r);
 
-      	  ROS_INFO("Image total weight sum Left: %f . Right: %f > \n", leftSum.val[0], rightSum.val[0]);
-          ROS_INFO("Force in the left : < %f , %f > \n", fx_l.m00, fy_l.m00);
-          ROS_INFO("Force in the right : < %f , %f > \n", fx_r.m00, fy_r.m00);
+        ROS_INFO("The offset of the left points are  < %f , %f  > and  < %f , %f  >\n", vel_0l.x, vel_0l.y, vel_1l.x, vel_1l.y);
+        ROS_INFO("The offset of the right points are  < %f , %f  > and  < %f , %f  >\n", vel_0r.x, vel_0r.y, vel_1r.x, vel_1r.y);
 
-          ROS_INFO("Left torque: < %f > \n", tau_l );
-          ROS_INFO("Right torque: < %f > \n", tau_r );
+        ROS_INFO_STREAM(fullJac << std::endl);
 
-          ROS_INFO("The offset of the left points are  < %f , %f  > and  < %f , %f  >\n", vel_0l.x,vel_0l.y, vel_1l.x, vel_1l.y);
-          ROS_INFO("The offset of the right points are  < %f , %f  > and  < %f , %f  >\n", vel_0r.x,vel_0r.y, vel_1r.x, vel_1r.y);
+        ROS_INFO_STREAM(fullJac.inv(DECOMP_SVD) << std::endl );
 
-          ROS_INFO_STREAM(fullJac);
-
-          ROS_INFO("The Cylinder update is <%f m, %f m, %f m, %f rads, %f rads > \n", cylinder_offset.x,cylinder_offset.z, cylinder_offset.z, thetaOffset,phiOffset);
+        ROS_INFO_STREAM(imageOffset << std::endl);
 
 
-          Mat segDisp_l(segmentedImageFloat_l*(1.0/255.0));
-            Mat segDisp_r(segmentedImageFloat_r*(1.0/255.0));
-            Mat weighDisp_l(weightedMask_l*(1.0/255.0));
-            Mat weighDisp_r(weightedMask_r*(1.0/255.0));
-            imshow("segment_r", segDisp_r);
-            imshow("segment_l", segDisp_l);
-            imshow("weighted_l", weighDisp_l);
-            imshow("weighted_r", weighDisp_r);
-            waitKey(0);
-            destroyWindow("segment_l");
-            destroyWindow("segment_r");
-            destroyWindow("weighted_l");
-            destroyWindow("weighted_r");
+        ROS_INFO("The Cylinder update is <%f m, %f m, %f m, %f rads, %f rads > \n",
+            cylinder_offset.x, cylinder_offset.z, cylinder_offset.z, thetaOffset, phiOffset);
+
+
+
+        Mat segDisp_l(segmentedImageFloat_l*(1.0/255.0));
+        Mat segDisp_r(segmentedImageFloat_r*(1.0/255.0));
+        Mat weighDisp_l(weightedMask_l*(1.0/255.0));
+        Mat weighDisp_r(weightedMask_r*(1.0/255.0));
+
+
+
+        Mat full_segmentedDisp(segmentedImage.size(), CV_8UC3);
+
+        cvtColor(segmentedImage, full_segmentedDisp, CV_GRAY2BGR);
+
+        Point disp_tip0l(tips_l.at<double>(0), tips_l.at<double>(1));
+        Point disp_tip1l(tips_l.at<double>(3), tips_l.at<double>(4));
+
+        circle(full_segmentedDisp, disp_tip0l, 3.0, Scalar(255, 0, 0), -1);
+        circle(full_segmentedDisp, disp_tip1l, 2.0, Scalar(255, 255, 0), -1);
+
+        Point disp_tip0r(tips_r.at<double>(0), tips_r.at<double>(1));
+        Point disp_tip1r(tips_r.at<double>(3), tips_r.at<double>(4));
+        circle(full_segmentedDisp, disp_tip0r, 3.0, Scalar(255, 0, 0), -1 );
+        circle(full_segmentedDisp, disp_tip1r, 2.0, Scalar(255, 255, 0), -1 );
+
+        imshow("segmented_Full", full_segmentedDisp);
+
+        imshow("segment_r", segDisp_r);
+        imshow("segment_l", segDisp_l);
+        imshow("weighted_l", weighDisp_l);
+        imshow("weighted_r", weighDisp_r);
+        waitKey(0);
+        destroyWindow("segment_l");
+        destroyWindow("segment_r");
+        destroyWindow("weighted_l");
+        destroyWindow("weighted_r");
+        destroyWindow("segmented_Full");
       }
 
       
