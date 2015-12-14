@@ -18,7 +18,7 @@ using namespace cv_local;
 Mat ellipse2Mat(RotatedRect input)
 {
 
-    Mat conicMat(3,3,CV_64FC1);
+    Mat conicMat(3, 3, CV_64FC1);
 
     //generate the first stage of parameters.
     double a = input.size.width/2;

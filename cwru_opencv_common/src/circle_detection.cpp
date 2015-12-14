@@ -1,6 +1,3 @@
-
-
-
 /*This file relies on the following external libraries
 OpenCV (2.3.1)
 PGRflyCapture (2.3.3.18)
@@ -9,6 +6,7 @@ PGRflyCapture (2.3.3.18)
 
 #include "cwru_opencv_common/circle_detection.h"
 
+#include <vector>
 
 
 /*bool pointYCompare(Point2f pt1, Point2f pt2)
@@ -21,37 +19,34 @@ PGRflyCapture (2.3.3.18)
     else return false;
 
 }*/
-using namespace cv;
+
+using cv::RotatedRect;
+using cv::Mat;
+using cv::Point;
+
 
 cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt)
 {
-
     std::vector< std::vector<Point> > contours;
 
-    //make sure the seed point is valid.
-    if(seedPt.x > inputImg.cols || seedPt.y > inputImg.rows || seedPt.x < 0 || seedPt.y < 0)
+
+    if (seedPt.x > inputImg.cols || seedPt.y > inputImg.rows || seedPt.x < 0 || seedPt.y < 0)
     {
-        return RotatedRect(Point2f(-1,-1),Size2f(-1,-1),0);
+        return RotatedRect(Point2f(-1, -1), Size2f(-1, -1), 0);
     }
 
     int newMaskVal = 255;
-    Scalar newVal = Scalar( 120, 120, 120 );
+    Scalar newVal = Scalar(120, 120, 120);
 
     int connectivity = 8;
-    int flags = connectivity | (newMaskVal << 8 ) | FLOODFILL_FIXED_RANGE | FLOODFILL_MASK_ONLY;
+    int flags = connectivity | (newMaskVal << 8) | FLOODFILL_FIXED_RANGE | FLOODFILL_MASK_ONLY;
 
     int lo = 20;
     int up = 10;
 
-    Mat mask2 = Mat::zeros( inputImg.rows + 2, inputImg.cols + 2, CV_8UC1 );
-    floodFill( inputImg, mask2, seedPt, newVal, 0, Scalar( lo, lo, lo ), Scalar( up, up, up), flags );
-    Mat mask = mask2( Range( 1, mask2.rows - 1 ), Range( 1, mask2.cols - 1 ) );
-
-
-/*    imshow( "Mask", mask );
-    waitKey(0);
-    destroyWindow("Mask");
-*/
+    Mat mask2 = Mat::zeros(inputImg.rows + 2, inputImg.cols + 2, CV_8UC1);
+    floodFill(inputImg, mask2, seedPt, newVal, 0, Scalar(lo, lo, lo), Scalar(up, up, up), flags);
+    Mat mask = mask2(Range(1, mask2.rows - 1), Range(1, mask2.cols - 1));
 
 
     Mat elementOpen = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
