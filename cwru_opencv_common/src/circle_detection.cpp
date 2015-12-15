@@ -23,6 +23,17 @@ PGRflyCapture (2.3.3.18)
 using cv::RotatedRect;
 using cv::Mat;
 using cv::Point;
+using cv::Point2f;
+using cv::Point2d;
+using cv::Scalar;
+using cv::Size2f;
+using cv::MORPH_ELLIPSE;
+using cv::MORPH_OPEN;
+using cv::Size;
+using cv::FLOODFILL_FIXED_RANGE;
+using cv::FLOODFILL_MASK_ONLY;
+
+using cv::Range;
 
 
 cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt)

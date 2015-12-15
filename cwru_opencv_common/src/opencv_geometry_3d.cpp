@@ -35,7 +35,7 @@
  *
  */
 
-
+#include <vector>
 #include <ros/ros.h>
 #include "cwru_opencv_common/opencv_geometry_3d.h"
 #include "cwru_opencv_common/projective_geometry.h"
@@ -140,11 +140,11 @@ namespace cv_3d
 
         if (jac.needed())
         {
-            localDir= computeNormalFromSpherical(cylinderIn.theta, cylinderIn.phi, jac_dir);
+            localDir = computeNormalFromSpherical(cylinderIn.theta, cylinderIn.phi, jac_dir);
         }
         else
         {
-            localDir= computeNormalFromSpherical(cylinderIn.theta, cylinderIn.phi);
+            localDir = computeNormalFromSpherical(cylinderIn.theta, cylinderIn.phi);
         }
 
 
@@ -154,7 +154,7 @@ namespace cv_3d
         end0.at<double>(2) = cylinderIn.center.z-localDir.z*cylinderIn.height/2;
         end0.at<double>(3) = 1.0;
 
-        //positive normal point.
+        // positive normal point.
         Mat end1(4, 1, CV_64FC1);
         end1.at<double>(0) = cylinderIn.center.x+localDir.x*cylinderIn.height/2;
         end1.at<double>(1) = cylinderIn.center.y+localDir.y*cylinderIn.height/2;
@@ -177,7 +177,7 @@ namespace cv_3d
         // pt1 is the endpoint in the negative direction
         // (this is important for the torque direction.
 
-        if(jac.needed())
+        if (jac.needed())
         {
             pt0 = cv_projective::reprojectPoint(end0Pt, P, cv::Mat(), cv::Mat(), jac_0);
             pt1 = cv_projective::reprojectPoint(end1Pt, P, cv::Mat(), cv::Mat(), jac_1);
@@ -244,13 +244,13 @@ namespace cv_3d
         }
 
             cornersV.resize(4);
-            cornersV[0] = corners[0] = Point(c0.x,c0.y);
-            cornersV[1] = corners[1] = Point(c1.x,c1.y);
-            cornersV[2] = corners[2] = Point(c2.x,c2.y);
-            cornersV[3] = corners[3] = Point(c3.x,c3.y);
+            cornersV[0] = corners[0] = Point(c0.x, c0.y);
+            cornersV[1] = corners[1] = Point(c1.x, c1.y);
+            cornersV[2] = corners[2] = Point(c2.x, c2.y);
+            cornersV[3] = corners[3] = Point(c3.x, c3.y);
 
             //Draw the 4 points in the image.
-            fillConvexPoly(inputImage,corners,4,Scalar(255,255,255),CV_AA);
+            fillConvexPoly(inputImage, corners, 4, Scalar(255, 255, 255), CV_AA);
 
         }
 
@@ -259,19 +259,18 @@ namespace cv_3d
          *  define the jacobian in terms of a rotation and translation. due to the position of the points.
          *  2d pose derivative.
          */
-        if(jac.needed())
+        if (jac.needed())
         {
-                      Mat dEnd0(3,5,CV_64FC1);
-            Mat dEnd1(3,5,CV_64FC1);
+            Mat dEnd0(3, 5, CV_64FC1);
+            Mat dEnd1(3, 5, CV_64FC1);
 
-            ((Mat) (jac_dir*cylinderIn.height/2)).copyTo(dEnd1.colRange(3,5));
-            ((Mat) (jac_dir*-cylinderIn.height/2)).copyTo(dEnd0.colRange(3,5));
+            ((Mat) (jac_dir*cylinderIn.height/2)).copyTo(dEnd1.colRange(3, 5));
+            ((Mat) (jac_dir*-cylinderIn.height/2)).copyTo(dEnd0.colRange(3, 5));
 
-        ((Mat)Mat::eye(3,3,CV_64FC1)).copyTo(dEnd0.colRange(0,3));
-        ((Mat)Mat::eye(3,3,CV_64FC1)).copyTo(dEnd1.colRange(0,3));
+            ((Mat)Mat::eye(3, 3, CV_64FC1)).copyTo(dEnd0.colRange(0, 3));
+            ((Mat)Mat::eye(3, 3, CV_64FC1)).copyTo(dEnd1.colRange(0, 3));
 
-
-                      //center point derivative
+            //center point derivative
             //derivative is a function of the cylinderical motion.
             Mat jac_ends(4,5,CV_64FC1);
 
@@ -444,8 +443,8 @@ namespace cv_3d
         Mat weightedMask_l = blurredMask_l.mul(segmentedImageFloat_l);
         Mat weightedMask_r = blurredMask_r.mul(segmentedImageFloat_r);
 
-        //Find the min and max of the weighted Mask.
-        double min_l(0),max_l(0);
+        // Find the min and max of the weighted Mask.
+        double min_l(0), max_l(0);
 
         minMaxIdx(weightedMask_l,&min_l,&max_l);
 
@@ -465,6 +464,9 @@ namespace cv_3d
         /*
          * @todo Fit the ellipse modeling to an external function
          */
+
+
+
         Mat binary_l;
 
         double thresh_l(0);
@@ -480,14 +482,14 @@ namespace cv_3d
         findContours(binary_l, contours_l, noArray(), CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, coilRect_l.tl());
 
         std::vector < std::vector < Point > > contours_r;
-        findContours(binary_r,contours_r,noArray(),CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE,coilRect_r.tl());
+        findContours(binary_r, contours_r, noArray(), CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, coilRect_r.tl());
 
 
         RotatedRect outputEllipse_l(minAreaRect(contours_l[0]));
 
         RotatedRect outputEllipse_r(minAreaRect(contours_r[0]));
 
-        Mat  w_lx,w_rx,w_ly,w_ry;
+        Mat  w_lx, w_rx, w_ly, w_ry;
 
         Scharr(weightedMask_l, w_lx, weightedMask_l.depth(), 1, 0);
         Scharr(weightedMask_l, w_ly, weightedMask_l.depth(), 0, 1);
@@ -498,12 +500,12 @@ namespace cv_3d
         Mat wM_rx(w_lx.clone()), wM_ry(w_lx.clone());
         Mat wM_lx(w_lx.clone()), wM_ly(w_lx.clone());
 
-        w_rx.copyTo(wM_rx,ROI8U_r);
-        w_ry.copyTo(wM_ry,ROI8U_r);
+        w_rx.copyTo(wM_rx, ROI8U_r);
+        w_ry.copyTo(wM_ry, ROI8U_r);
 
 
-        w_lx.copyTo(wM_lx,ROI8U_l);
-        w_ly.copyTo(wM_ly,ROI8U_l);
+        w_lx.copyTo(wM_lx, ROI8U_l);
+        w_ly.copyTo(wM_ly, ROI8U_l);
 
         Scalar leftSum(sum(ROI8U_l));
         Scalar rightSum(sum(ROI8U_r));
@@ -514,10 +516,17 @@ namespace cv_3d
         Moments fx_l(moments(wM_lx));
         Moments fy_l(moments(wM_ly));
 
+        // Identify the eigenvalues.
+
+
 
         double tau_l((fy_l.m10-fy_l.m00*coilBox_l.center.x-fx_l.m01+fx_l.m00*coilBox_l.center.y)/(leftSum.val[0]));
 
         double tau_r((fy_r.m10-fy_r.m00*coilBox_r.center.x-fx_r.m01+fx_r.m00*coilBox_r.center.y)/(rightSum.val[0]));
+
+        //Identify the eigenvalues:
+
+
 
 
         // Using the tip positions, infer a velocity in both left and right.
