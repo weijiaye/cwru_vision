@@ -44,6 +44,7 @@
 using cv::Mat;
 using cv::OutputArray;
 using cv::Point2d;
+using cv::Point2f;
 using cv::RotatedRect;
 using cv::Scalar;
 using cv::Point;
@@ -518,36 +519,87 @@ namespace cv_3d
 
         // Identify the eigenvalues.
 
+        Moments wl(moments(weightedMask_l));
+
+        Moments wr(moments(weightedMask_r));
+
+        // compute the new center:
+
+        Mat dir_r(2, 2, CV_64FC1);
+        Mat dir_l(2, 2, CV_64FC1);
+
+        dir_l.at<double>(0) = wl.nu20;
+
+        dir_l.at<double>(1) = wl.nu11;
+        dir_l.at<double>(2) = wl.nu11;
+
+        dir_l.at<double>(3) = wl.nu02;
+
+        dir_r.at<double>(0) = wr.nu20;
+
+        dir_r.at<double>(1) = wr.nu11;
+        dir_r.at<double>(2) = wr.nu11;
+
+        dir_r.at<double>(3) = wr.nu02;
+
+        Point2f newPt_l(coilRect_l.tl()+Point2f(wl.m10/wl.m00, wl.m01/wl.m00);
+
+        Point2f newPt_r(coilRect_r.tl()+Point2f(wr.m10/wr.m00, wr.m01/wr.m00);
+
+        // Find the directionality.
+
+        Mat eigenVal_l, eigenVec_l, eigenVal_r, eigenVec_r;
+
+        eigen(dir_l, eigenVal_l, eigenVec_l);
+        eigen(dir_r, eigenVal_r, eigenVec_r);
+
+        Point3d dirP_l(eigenVec_l.at<double>(0), eigenVec_l.at<double>(1), 0.0);
+        Point3d dirP_r(eigenVec_r.at<double>(0), eigenVec_r.at<double>(1), 0.0);
+
+        Point3d dirT_l(eigenVec_l.at<double>(2), eigenVec_l.at<double>(3), 0.0);
+        Point3d dirT_r(eigenVec_r.at<double>(2), eigenVec_r.at<double>(3), 0.0);
+
+        // Normalize the eigenvectors:
+
+        dirP_l *= 1/(norm(dirP_l));
+        dirP_r *= 1/(norm(dirP_r));
+
+        // normalize the v10 vector:
+        Point3d tip0l(tips_l.at<double>(0), tips_l.at<double>(1), 0.0);
+        Point3d tip1l(tips_l.at<double>(3), tips_l.at<double>(4), 0.0);
+
+        Point3d tip0r(tips_r.at<double>(0), tips_r.at<double>(1), 0.0);
+        Point3d tip1r(tips_r.at<double>(3), tips_r.at<double>(4), 0.0);
+
+        Point3d vec10_l(tip1l-tip0l);
 
 
-        double tau_l((fy_l.m10-fy_l.m00*coilBox_l.center.x-fx_l.m01+fx_l.m00*coilBox_l.center.y)/(leftSum.val[0]));
+        vec10_l *= (1/norm(vec10_l));
 
-        double tau_r((fy_r.m10-fy_r.m00*coilBox_r.center.x-fx_r.m01+fx_r.m00*coilBox_r.center.y)/(rightSum.val[0]));
-
-        //Identify the eigenvalues:
+        Point3d vec10_r(tip1r-tip0r);
 
 
+        vec10_r *= (1/norm(vec10_r));
 
 
-        // Using the tip positions, infer a velocity in both left and right.
+        // At this point compute the estimated del theta needed in both of the images.
+        Point3d omega_l(vec10_l.cross(dirP_l));
+        double theta_l(omega_l.z);
 
-        double tauGain(0.0005);  // start small.
+        Point3d omega_r(vec10_r.cross(dirP_r));
+        double theta_r(omega_r.z);
+
+        double theta_gain(0.005);  // start small.
         double forceGain(0.05);
 
         // left image update:
 
-        Point3d omega_l(0.0, 0.0, tauGain*tau_l);
-
-        Point3d vel_l(-fx_l.m00*forceGain/(leftSum.val[0]), -fy_l.m00*forceGain/(leftSum.val[0]), 0.0);
-
-        Point3d tip0l(tips_l.at<double>(0), tips_l.at<double>(1), 0.0);
-        Point3d tip1l(tips_l.at<double>(3), tips_l.at<double>(4), 0.0);
+        // Point3d omega_l(0.0, 0.0, tauGain*tau_l);
 
         Point3d centerl(tip0l*0.5+tip1l*0.5);
 
         Point3d vector0l(tip0l-centerl);
         Point3d vector1l(tip1l-centerl);
-
 
         Point3d vel_0l(omega_l.cross(vector0l)+vel_l);
         Point3d vel_1l(omega_l.cross(vector1l)+vel_l);
@@ -555,13 +607,6 @@ namespace cv_3d
 
         // right image:
 
-
-        Point3d omega_r(0.0, 0.0, tauGain*tau_r);
-
-        Point3d vel_r(-fx_r.m00*forceGain/(rightSum.val[0]), -fy_r.m00*forceGain/(rightSum.val[0]), 0.0);
-
-        Point3d tip0r(tips_r.at<double>(0), tips_r.at<double>(1), 0.0);
-        Point3d tip1r(tips_r.at<double>(3), tips_r.at<double>(4), 0.0);
 
         Point3d centerr(tip0r*0.5+tip1r*0.5);
 
@@ -606,6 +651,16 @@ namespace cv_3d
         double phiOffset(offsetVector.at<double>(4));
         if(displayPause)
         {
+            
+            ROS_INFO("angle offset left: < %f >", theta_l);
+            ROS_INFO("angle offset right: < %f >", theta_r);
+
+            ROS_INFO("Direction of new left weight: < %f , %f>", dirP_l.x , dirP_l.y );
+            ROS_INFO("Direction of new right weight: < %f , %f>", dirP_r.x , dirP_r.y );
+
+            ROS_INFO("Direction of new left weight: < %f , %f>", dirT_l.x , dirT_l.y );
+            ROS_INFO("Direction of new right weight: < %f , %f>", dirT_r.x , dirT_r.y );
+
             ROS_INFO("Image total weight sum Left: %f . Right: %f > \n", leftSum.val[0], rightSum.val[0]);
             ROS_INFO("Force in the left : < %f , %f > \n", fx_l.m00, fy_l.m00);
             ROS_INFO("Force in the right : < %f , %f > \n", fx_r.m00, fy_r.m00);
