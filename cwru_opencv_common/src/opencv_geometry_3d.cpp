@@ -112,7 +112,6 @@ namespace cv_3d
 
         if (centerPt.needed())
         {
-            ROS_INFO("Getting the center Pt and Radius");
             centerPt.create(3, 1, CV_64FC1);
             Mat output(centerPt.getMat());
 
@@ -279,10 +278,9 @@ namespace cv_3d
             ((Mat) (jac_0*dEnd0)).copyTo((Mat) jac_ends.rowRange(0,2));
             ((Mat) (jac_1*dEnd1)).copyTo((Mat) jac_ends.rowRange(2,4));
 
-            jac.create(4,5,CV_64FC1);
+            jac.create(4, 5, CV_64FC1);
 
             jac_ends.copyTo(jac.getMat());
-          
         }
 
         return minAreaRect(cornersV);
@@ -291,33 +289,28 @@ namespace cv_3d
 
 
 
-    void optimizeSphere(sphere &sphereIn, const Mat& segmentedImage, const Mat& P_l, const Mat& P_r , int k_width, double k_var,bool displayPause)
+    void optimizeSphere(sphere &sphereIn, const Mat& segmentedImage,
+        const Mat& P_l, const Mat& P_r, int k_width, double k_var, bool displayPause)
     {
-        /*
-         * @todo Finish this function
-         */
-
         Mat segmentedImageFloat;
         segmentedImage.convertTo(segmentedImageFloat, CV_32FC1);
-        Mat mask_l(Mat::zeros(segmentedImage.size(),segmentedImageFloat.type()));
-        Mat mask_r(Mat::zeros(segmentedImage.size(),segmentedImageFloat.type()));
+        Mat mask_l(Mat::zeros(segmentedImage.size(), segmentedImageFloat.type()));
+        Mat mask_r(Mat::zeros(segmentedImage.size(), segmentedImageFloat.type()));
 
-        Mat jac_l,jac_r;
-        Mat center_l,center_r;
-        Rect sphereInBox_l = renderSphere(mask_l, sphereIn , P_l, center_l ,jac_l );
+        Mat jac_l, jac_r;
+        Mat center_l, center_r;
+        Rect sphereInBox_l = renderSphere(mask_l, sphereIn , P_l, center_l, jac_l);
 
-        Rect sphereInBox_r = renderSphere(mask_r, sphereIn , P_r, center_r ,jac_r);
+        Rect sphereInBox_r = renderSphere(mask_r, sphereIn , P_r, center_r, jac_r);
 
-        //update the sphereIn sphere:
-        Point2d pt_l = cv_projective::reprojectPoint(sphereIn.center,P_l,Mat(),Mat(),jac_l);
-        Point2d pt_r = cv_projective::reprojectPoint(sphereIn.center,P_r,Mat(),Mat(),jac_r);
+        // update the sphereIn sphere:
+        Point2d pt_l = cv_projective::reprojectPoint(sphereIn.center, P_l, Mat(), Mat(), jac_l);
+        Point2d pt_r = cv_projective::reprojectPoint(sphereIn.center, P_r, Mat(), Mat(), jac_r);
 
-        ROS_INFO_STREAM(jac_l);
-        ROS_INFO_STREAM(jac_r);
 
-        Mat jacFull(4,3,CV_64FC1);
-        Mat jacFull_l = jacFull.rowRange(0,2);
-        Mat jacFull_r = jacFull.rowRange(2,4);
+        Mat jacFull(4, 3, CV_64FC1);
+        Mat jacFull_l = jacFull.rowRange(0, 2);
+        Mat jacFull_r = jacFull.rowRange(2, 4);
         jac_l.copyTo(jacFull_l);
         jac_r.copyTo(jacFull_r);
 
@@ -327,8 +320,8 @@ namespace cv_3d
         Mat ROI_l;
         Mat ROI_r;
         int pointOff(k_width);
-        sphereInBox_l -= Point(pointOff,pointOff);
-        sphereInBox_l += Size(2*pointOff,2*pointOff);
+        sphereInBox_l -= Point(pointOff, pointOff);
+        sphereInBox_l += Size(2*pointOff, 2*pointOff);
 
         sphereInBox_r -= Point(pointOff,pointOff);
         sphereInBox_r += Size(2*pointOff,2*pointOff);
@@ -346,16 +339,35 @@ namespace cv_3d
         Moments mom_l = moments(weightedMask_l);
         Moments mom_r = moments(weightedMask_r);
 
-        Mat pointOffsets(4,1,CV_64FC1);
+        Mat pointOffsets(4, 1, CV_64FC1);
         pointOffsets.at<double>(0) = (mom_l.m10/mom_l.m00)+sphereInBox_l.x-pt_l.x;
         pointOffsets.at<double>(1) = (mom_l.m01/mom_l.m00)+sphereInBox_l.y-pt_l.y;
 
         pointOffsets.at<double>(2) = (mom_r.m10/mom_r.m00)+sphereInBox_r.x-pt_r.x;
         pointOffsets.at<double>(3) = (mom_r.m01/mom_r.m00)+sphereInBox_r.y-pt_r.y;
 
-        if(displayPause)
+
+        Mat offsetList = jacFull.inv(DECOMP_SVD)*(pointOffsets*0.4);
+
+        Point3d offsetPt(offsetList.at<double>(0), offsetList.at<double>(1), offsetList.at<double>(2));
+
+        // update the sphereIn.
+        sphereIn.center += offsetPt;
+
+
+        if (displayPause)
         {
 
+            ROS_INFO("The 2d image offsets are:\n");
+            ROS_INFO_STREAM(pointOffsets);
+
+            ROS_INFO("The full Jacobian is\n");
+            ROS_INFO_STREAM(jacFull);
+
+            ROS_INFO("The final sphere offset (in 3d space) is < %f, %f, %f >\n", offsetPt.x, offsetPt.y, offsetPt.z);
+
+            ROS_INFO("The output sphere position is < %f, %f, %f >\n",
+            sphereIn.center.x, sphereIn.center.y, sphereIn.center.z);
 
             Mat segDisp_l(segmentedImageFloat_l*(1.0/255.0));
             Mat segDisp_r(segmentedImageFloat_r*(1.0/255.0));
@@ -372,44 +384,28 @@ namespace cv_3d
             destroyWindow("weighted_r");
         }
 
-        //transpose jacobian
-        //notice the lambda of 0.4.
-        ROS_INFO("The 2d image offsets are:\n");
-        ROS_INFO_STREAM(pointOffsets);
-
-        ROS_INFO("The full Jacobian is\n");
-        ROS_INFO_STREAM(jacFull);
-        Mat offsetList = jacFull.inv(DECOMP_SVD)*(pointOffsets*0.4);
-
-        Point3d offsetPt(offsetList.at<double>(0),offsetList.at<double>(1),offsetList.at<double>(2));
-
-        //update the sphereIn.
-        sphereIn.center +=offsetPt; 
-        ROS_INFO("The final sphere offset (in 3d space) is < %f, %f, %f >\n", offsetPt.x, offsetPt.y, offsetPt.z);
-
-        ROS_INFO("The output sphere position is < %f, %f, %f >\n", sphereIn.center.x, sphereIn.center.y, sphereIn.center.z );
-
+     
         return;
     }
 
 
 
-    void optimizeCylinder(cylinder & cylinderIn, const Mat & segmentedImage, const Mat& P_l, const Mat&P_r , int k_width, double k_var, bool displayPause )
+    void optimizeCylinder(cylinder & cylinderIn,
+        const Mat & segmentedImage, const Mat& P_l, const Mat&P_r , int k_width, double k_var, bool displayPause )
     {
-
-        //create a left and right max image.
+        // create a left and right max image.
         Mat segmentedImageFloat;
         segmentedImage.convertTo(segmentedImageFloat, CV_32FC1);
 
-        Mat mask_l = Mat::zeros(segmentedImage.size(),segmentedImageFloat.type());
-        Mat mask_r = Mat::zeros(segmentedImage.size(),segmentedImageFloat.type());
+        Mat mask_l = Mat::zeros(segmentedImage.size(), segmentedImageFloat.type());
+        Mat mask_r = Mat::zeros(segmentedImage.size(), segmentedImageFloat.type());
 
-        Mat jac_l,jac_r;
-        Mat tips_l,tips_r;
-        RotatedRect coilBox_l(renderCylinder(mask_l , cylinderIn, P_l,tips_l , jac_l));
-        RotatedRect coilBox_r(renderCylinder(mask_r , cylinderIn, P_r,tips_r ,jac_r));
+        Mat jac_l, jac_r;
+        Mat tips_l, tips_r;
+        RotatedRect coilBox_l(renderCylinder(mask_l, cylinderIn, P_l, tips_l, jac_l));
+        RotatedRect coilBox_r(renderCylinder(mask_r, cylinderIn, P_r, tips_r, jac_r));
 
-        Mat mask8U_l,mask8U_r;
+        Mat mask8U_l, mask8U_r;
         mask_l.convertTo(mask8U_l,CV_8UC1);
         mask_r.convertTo(mask8U_r,CV_8UC1);
 
@@ -542,9 +538,12 @@ namespace cv_3d
 
         dir_r.at<double>(3) = wr.nu02;
 
-        Point2f newPt_l(coilRect_l.tl()+Point2f(wl.m10/wl.m00, wl.m01/wl.m00);
+        Point2d rectOff_l(coilRect_l.tl().x, coilRect_l.tl().y);
+        Point2d rectOff_r(coilRect_r.tl().x, coilRect_r.tl().y);
 
-        Point2f newPt_r(coilRect_r.tl()+Point2f(wr.m10/wr.m00, wr.m01/wr.m00);
+        Point2d newPt_l(rectOff_l+Point2d(wl.m10/wl.m00, wl.m01/wl.m00));
+
+        Point2d newPt_r(rectOff_r+Point2d(wr.m10/wr.m00, wr.m01/wr.m00));
 
         // Find the directionality.
 
@@ -582,24 +581,24 @@ namespace cv_3d
         vec10_r *= (1/norm(vec10_r));
 
 
+        double rot_gain(1);  // start small.
+        double lGain(1);
+
+
         // At this point compute the estimated del theta needed in both of the images.
-        Point3d omega_l(vec10_l.cross(dirP_l));
-        double theta_l(omega_l.z);
 
-        Point3d omega_r(vec10_r.cross(dirP_r));
-        double theta_r(omega_r.z);
-
-        double theta_gain(0.005);  // start small.
-        double forceGain(0.05);
 
         // left image update:
 
-        // Point3d omega_l(0.0, 0.0, tauGain*tau_l);
+        Point3d omega_l(vec10_l.cross(dirP_l));
+        double theta_l(asin(omega_l.z)*rot_gain);
 
         Point3d centerl(tip0l*0.5+tip1l*0.5);
 
         Point3d vector0l(tip0l-centerl);
         Point3d vector1l(tip1l-centerl);
+
+        Point3d vel_l((newPt_l.x-centerl.x)*lGain, (newPt_l.y-centerl.y)*lGain, 0.0);
 
         Point3d vel_0l(omega_l.cross(vector0l)+vel_l);
         Point3d vel_1l(omega_l.cross(vector1l)+vel_l);
@@ -607,30 +606,33 @@ namespace cv_3d
 
         // right image:
 
+        Point3d omega_r(vec10_r.cross(dirP_r));
+        double theta_r(asin(omega_r.z)*rot_gain);
 
         Point3d centerr(tip0r*0.5+tip1r*0.5);
 
         Point3d vector0r(tip0r-centerr);
         Point3d vector1r(tip1r-centerr);
 
+        Point3d vel_r((newPt_r.x-centerr.x)*lGain, (newPt_r.y-centerr.y)*lGain, 0.0);
 
         Point3d vel_0r(omega_r.cross(vector0r)+vel_r);
         Point3d vel_1r(omega_r.cross(vector1r)+vel_r);
 
 
-        //compare the input and output results...
-        //Do this using a external function.
+        // compare the input and output results...
+        // Do this using a external function.
 
-        //find the best fit rotated rect here:
+        // find the best fit rotated rect here:
 
-        //Couple the two jacobian:
+        // Couple the two jacobian:
 
-        Mat fullJac(8,5,CV_64FC1);
+        Mat fullJac(8, 5, CV_64FC1);
 
-        jac_l.copyTo(fullJac.rowRange(0,4));
-        jac_r.copyTo(fullJac.rowRange(4,8));
+        jac_l.copyTo(fullJac.rowRange(0, 4));
+        jac_r.copyTo(fullJac.rowRange(4, 8));
 
-        Mat imageOffset(8,1,CV_64FC1);
+        Mat imageOffset(8, 1, CV_64FC1);
 
         imageOffset.at<double>(0) = vel_0l.x;
         imageOffset.at<double>(1) = vel_0l.y;
@@ -646,89 +648,71 @@ namespace cv_3d
         Mat offsetVector(fullJac.inv(DECOMP_SVD)*imageOffset);
 
 
-        Point3d cylinder_offset(offsetVector.at<double>(0),offsetVector.at<double>(1),offsetVector.at<double>(2));
+        Point3d cylinder_offset(offsetVector.at<double>(0), offsetVector.at<double>(1), offsetVector.at<double>(2));
         double thetaOffset(offsetVector.at<double>(3));
         double phiOffset(offsetVector.at<double>(4));
-        if(displayPause)
+        if (displayPause)
         {
-            
             ROS_INFO("angle offset left: < %f >", theta_l);
             ROS_INFO("angle offset right: < %f >", theta_r);
 
-            ROS_INFO("Direction of new left weight: < %f , %f>", dirP_l.x , dirP_l.y );
-            ROS_INFO("Direction of new right weight: < %f , %f>", dirP_r.x , dirP_r.y );
-
-            ROS_INFO("Direction of new left weight: < %f , %f>", dirT_l.x , dirT_l.y );
-            ROS_INFO("Direction of new right weight: < %f , %f>", dirT_r.x , dirT_r.y );
+            ROS_INFO("Direction of new left weight: < %f , %f>", dirP_l.x , dirP_l.y);
+            ROS_INFO("Direction of new right weight: < %f , %f>", dirP_r.x , dirP_r.y);
 
             ROS_INFO("Image total weight sum Left: %f . Right: %f > \n", leftSum.val[0], rightSum.val[0]);
-            ROS_INFO("Force in the left : < %f , %f > \n", fx_l.m00, fy_l.m00);
-            ROS_INFO("Force in the right : < %f , %f > \n", fx_r.m00, fy_r.m00);
-            ROS_INFO("Left torque: < %f > \n", tau_l);
-            ROS_INFO("Right torque: < %f > \n", tau_r);
 
-        ROS_INFO("The offset of the left points are  < %f , %f  > and  < %f , %f  >\n", vel_0l.x, vel_0l.y, vel_1l.x, vel_1l.y);
-        ROS_INFO("The offset of the right points are  < %f , %f  > and  < %f , %f  >\n", vel_0r.x, vel_0r.y, vel_1r.x, vel_1r.y);
+                        
 
-        ROS_INFO_STREAM(fullJac << std::endl);
-
-        ROS_INFO_STREAM(fullJac.inv(DECOMP_SVD) << std::endl );
-
-        ROS_INFO_STREAM(imageOffset << std::endl);
+            ROS_INFO("The offset of the left points are  < %f , %f  > and  < %f , %f  >\n", vel_0l.x, vel_0l.y, vel_1l.x, vel_1l.y);
+            ROS_INFO("The offset of the right points are  < %f , %f  > and  < %f , %f  >\n", vel_0r.x, vel_0r.y, vel_1r.x, vel_1r.y);
 
 
-        ROS_INFO("The Cylinder update is <%f m, %f m, %f m, %f rads, %f rads > \n",
+            ROS_INFO("The Cylinder update is <%f m, %f m, %f m, %f rads, %f rads > \n",
             cylinder_offset.x, cylinder_offset.z, cylinder_offset.z, thetaOffset, phiOffset);
 
 
 
-        Mat segDisp_l(segmentedImageFloat_l*(1.0/255.0));
-        Mat segDisp_r(segmentedImageFloat_r*(1.0/255.0));
-        Mat weighDisp_l(weightedMask_l*(1.0/255.0));
-        Mat weighDisp_r(weightedMask_r*(1.0/255.0));
+            Mat segDisp_l(segmentedImageFloat_l*(1.0/255.0));
+            Mat segDisp_r(segmentedImageFloat_r*(1.0/255.0));
+            Mat weighDisp_l(weightedMask_l*(1.0/255.0));
+            Mat weighDisp_r(weightedMask_r*(1.0/255.0));
 
 
 
-        Mat full_segmentedDisp(segmentedImage.size(), CV_8UC3);
+            Mat full_segmentedDisp(segmentedImage.size(), CV_8UC3);
 
-        cvtColor(segmentedImage, full_segmentedDisp, CV_GRAY2BGR);
+            cvtColor(segmentedImage, full_segmentedDisp, CV_GRAY2BGR);
 
-        Point disp_tip0l(tips_l.at<double>(0), tips_l.at<double>(1));
-        Point disp_tip1l(tips_l.at<double>(3), tips_l.at<double>(4));
+            Point disp_tip0l(tips_l.at<double>(0), tips_l.at<double>(1));
+            Point disp_tip1l(tips_l.at<double>(3), tips_l.at<double>(4));
 
-        circle(full_segmentedDisp, disp_tip0l, 3.0, Scalar(255, 0, 0), -1);
-        circle(full_segmentedDisp, disp_tip1l, 2.0, Scalar(255, 255, 0), -1);
+            circle(full_segmentedDisp, disp_tip0l, 3.0, Scalar(255, 0, 0), -1);
+            circle(full_segmentedDisp, disp_tip1l, 2.0, Scalar(255, 255, 0), -1);
 
-        Point disp_tip0r(tips_r.at<double>(0), tips_r.at<double>(1));
-        Point disp_tip1r(tips_r.at<double>(3), tips_r.at<double>(4));
-        circle(full_segmentedDisp, disp_tip0r, 3.0, Scalar(255, 0, 0), -1 );
-        circle(full_segmentedDisp, disp_tip1r, 2.0, Scalar(255, 255, 0), -1 );
+            Point disp_tip0r(tips_r.at<double>(0), tips_r.at<double>(1));
+            Point disp_tip1r(tips_r.at<double>(3), tips_r.at<double>(4));
+            circle(full_segmentedDisp, disp_tip0r, 3.0, Scalar(255, 0, 0), -1);
+            circle(full_segmentedDisp, disp_tip1r, 2.0, Scalar(255, 255, 0), -1);
 
-        imshow("segmented_Full", full_segmentedDisp);
+            imshow("segmented_Full", full_segmentedDisp);
 
-        imshow("segment_r", segDisp_r);
-        imshow("segment_l", segDisp_l);
-        imshow("weighted_l", weighDisp_l);
-        imshow("weighted_r", weighDisp_r);
-        waitKey(0);
-        destroyWindow("segment_l");
-        destroyWindow("segment_r");
-        destroyWindow("weighted_l");
-        destroyWindow("weighted_r");
-        destroyWindow("segmented_Full");
+            imshow("segment_r", segDisp_r);
+            imshow("segment_l", segDisp_l);
+            imshow("weighted_l", weighDisp_l);
+            imshow("weighted_r", weighDisp_r);
+            waitKey(0);
+            destroyWindow("segment_l");
+            destroyWindow("segment_r");
+            destroyWindow("weighted_l");
+            destroyWindow("weighted_r");
+            destroyWindow("segmented_Full");
       }
 
-      
-      //look at the twist from the original image to the new image.
-      //which eigenvector is bigger?
-      //find the largest eigenvector.
-
-      //largest left eigen:
-      //leftRow = 
       cylinderIn.center +=cylinder_offset;
       cylinderIn.theta += thetaOffset;
       cylinderIn.phi += phiOffset;
 
+      return;
     }
 
 cv::Point3d computeNormalFromSpherical(double theta, double phi, OutputArray jac)
