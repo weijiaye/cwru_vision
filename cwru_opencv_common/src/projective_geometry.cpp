@@ -512,7 +512,7 @@ Mat transformPoints(const cv::Mat &points,const cv::Mat& rvec, const cv::Mat &tv
 
             pointDerivative.copyTo(jacPoint);
 
-            Mat transDerivative = dABdB.colRange(0,12).rowRange(0,3)*transformJac;
+            Mat transDerivative = dABdA.colRange(0,12).rowRange(0,3)*transformJac;
             Mat jacTrans = jacMat.colRange(3,9);
             transDerivative.copyTo(jacTrans);
 
