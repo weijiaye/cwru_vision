@@ -1,7 +1,7 @@
 /* 
-* opencv.h:
+* opencv_geometry_3d.h:
 * 
-* Created By Russell Jackson & Connor Balin
+* Created By Russell Jackson
 * 10/19/2012
 */
 
@@ -13,10 +13,6 @@
 #ifndef OPENCV_GEOMETRY_3D_H
 #define OPENCV_GEOMETRY_3D_H
 
-
-
-
-// #define PI 3.14159265359
 
 #include <opencv2/opencv.hpp>
 
