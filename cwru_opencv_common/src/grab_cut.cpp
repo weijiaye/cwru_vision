@@ -1,11 +1,27 @@
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+
+#include <ros/ros.h>
+#include <ros/console.h>
+#include <cwru_opencv_common/grab_cut.h>
 
 #include <iostream>
 
 using namespace std;
 using namespace cv;
+
+
+namespace cv_grab_cut
+{
+
+const Scalar RED = Scalar(0,0,255);
+const Scalar PINK = Scalar(230,130,255);
+const Scalar BLUE = Scalar(255,0,0);
+const Scalar LIGHTBLUE = Scalar(255,255,160);
+const Scalar GREEN = Scalar(0,255,0);
+
+const int BGD_KEY = EVENT_FLAG_CTRLKEY;
+const int FGD_KEY = EVENT_FLAG_SHIFTKEY;
+
+
 
 static void help()
 {
@@ -28,27 +44,8 @@ static void help()
         "\tSHIFT+right mouse button - set GC_PR_FGD pixels\n" << endl;
 }
 
-const Scalar RED = Scalar(0,0,255);
-const Scalar PINK = Scalar(230,130,255);
-const Scalar BLUE = Scalar(255,0,0);
-const Scalar LIGHTBLUE = Scalar(255,255,160);
-const Scalar GREEN = Scalar(0,255,0);
 
-const int BGD_KEY = EVENT_FLAG_CTRLKEY;
-const int FGD_KEY = EVENT_FLAG_SHIFTKEY;
-
-static void getBinMask( const Mat& comMask, Mat& binMask )
-{
-    if( comMask.empty() || comMask.type()!=CV_8UC1 )
-        CV_Error( Error::StsBadArg, "comMask is empty or has incorrect type (not CV_8UC1)" );
-    if( binMask.empty() || binMask.rows!=comMask.rows || binMask.cols!=comMask.cols )
-        binMask.create( comMask.size(), CV_8UC1 );
-    binMask = comMask & 1;
-}
-
-
-
-void GCApplication::reset()
+void GrabCutObject::reset()
 {
     if( !mask.empty() )
         mask.setTo(Scalar::all(GC_BGD));
@@ -62,7 +59,7 @@ void GCApplication::reset()
     iterCount = 0;
 }
 
-void GCApplication::setImageAndWinName( const Mat& _image, const string& _winName  )
+void GrabCutObject::setImageAndWinName( const Mat& _image, const string& _winName  )
 {
     if( _image.empty() || _winName.empty() )
         return;
@@ -72,7 +69,7 @@ void GCApplication::setImageAndWinName( const Mat& _image, const string& _winNam
     reset();
 }
 
-void GCApplication::showImage() const
+void GrabCutObject::showImage() const
 {
     if( image->empty() || winName->empty() )
         return;
@@ -83,7 +80,7 @@ void GCApplication::showImage() const
         image->copyTo( res );
     else
     {
-        getBinMask( mask, binMask );
+        getMask( binMask );
         image->copyTo( res, binMask );
     }
 
@@ -103,7 +100,7 @@ void GCApplication::showImage() const
     imshow( *winName, res );
 }
 
-void GCApplication::setRectInMask()
+void GrabCutObject::setRectInMask()
 {
     CV_Assert( !mask.empty() );
     mask.setTo( GC_BGD );
@@ -114,7 +111,7 @@ void GCApplication::setRectInMask()
     (mask(rect)).setTo( Scalar(GC_PR_FGD) );
 }
 
-void GCApplication::setLblsInMask( int flags, Point p, bool isPr )
+void GrabCutObject::setLblsInMask( int flags, Point p, bool isPr )
 {
     vector<Point> *bpxls, *fpxls;
     uchar bvalue, fvalue;
@@ -144,9 +141,11 @@ void GCApplication::setLblsInMask( int flags, Point p, bool isPr )
     }
 }
 
-void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
+void GrabCutObject::mouseClick( int event, int x, int y, int flags, void* )
 {
     // TODO add bad args check
+
+
     switch( event )
     {
     case EVENT_LBUTTONDOWN: // set rect or GC_BGD(GC_FGD) labels
@@ -215,7 +214,13 @@ void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
     }
 }
 
-int GCApplication::nextIter()
+int GrabCutObject::getMask(Mat & binMask) const
+{
+    if( binMask.empty() || binMask.rows!=mask.rows || binMask.cols!=mask.cols ) binMask.create( mask.size(), CV_8UC1 );
+    binMask = mask & 1;
+}
+
+int GrabCutObject::nextIter()
 {
     if( isInitialized )
         grabCut( *image, mask, rect, bgdModel, fgdModel, 1 );
@@ -239,41 +244,27 @@ int GCApplication::nextIter()
     return iterCount;
 }
 
-GCApplication gcapp;
 
 static void on_mouse( int event, int x, int y, int flags, void* param )
 {
-    gcapp.mouseClick( event, x, y, flags, param );
+    GrabCutObject* localPtr= static_cast<GrabCutObject*> (param);
+    localPtr->mouseClick( event, x, y, flags, NULL );
 }
 
-int main( int argc, char** argv )
-{
-    cv::CommandLineParser parser(argc, argv, "{help h||}{@input||}");
-    if (parser.has("help"))
-    {
-        help();
-        return 0;
-    }
-    string filename = parser.get<string>("@input");
-    if( filename.empty() )
-    {
-        cout << "\nDurn, empty filename" << endl;
-        return 1;
-    }
-    Mat image = imread( filename, 1 );
-    if( image.empty() )
-    {
-        cout << "\n Durn, couldn't read image filename " << filename << endl;
-        return 1;
-    }
 
-    help();
 
-    const string winName = "image";
+void grabCutDemo(const Mat & srcImage, Mat & maskImage){
+
+  help();
+    
+
+    GrabCutObject gcapp;
+
+    const string winName = "grab_cut_image";
     namedWindow( winName, WINDOW_AUTOSIZE );
-    setMouseCallback( winName, on_mouse, 0 );
+    setMouseCallback( winName, on_mouse, &gcapp );
 
-    gcapp.setImageAndWinName( image, winName );
+    gcapp.setImageAndWinName( srcImage, winName );
     gcapp.showImage();
 
     for(;;)
@@ -282,7 +273,7 @@ int main( int argc, char** argv )
         switch( (char) c )
         {
         case '\x1b':
-            cout << "Exiting ..." << endl;
+            ROS_INFO_STREAM("Exiting ..." << endl);
             goto exit_main;
         case 'r':
             cout << endl;
@@ -291,7 +282,7 @@ int main( int argc, char** argv )
             break;
         case 'n':
             int iterCount = gcapp.getIterCount();
-            cout << "<" << iterCount << "... ";
+            ROS_INFO_STREAM( "<" << iterCount << "... ");
             int newIterCount = gcapp.nextIter();
             if( newIterCount > iterCount )
             {
@@ -299,12 +290,18 @@ int main( int argc, char** argv )
                 cout << iterCount << ">" << endl;
             }
             else
-                cout << "rect must be determined>" << endl;
+                ROS_INFO("rect must be determined>");
             break;
         }
     }
-
-exit_main:
+    exit_main:
+    {
+    gcapp.getMask(maskImage);
     destroyWindow( winName );
-    return 0;
+    return;
+    }
+
+
 }
+
+};

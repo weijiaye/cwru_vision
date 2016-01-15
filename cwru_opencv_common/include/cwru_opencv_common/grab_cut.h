@@ -2,10 +2,9 @@
 #define GRAB_CUT_ROS_H
 
 
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <string>
 
 namespace cv_grab_cut
 {
@@ -19,28 +18,30 @@ public:
     static const int thickness = -1;
 
     void reset();
-    void setImageAndWinName( const Mat& _image, const string& _winName );
+    void setImageAndWinName( const cv::Mat& _image, const std::string& _winName );
     void showImage() const;
     void mouseClick( int event, int x, int y, int flags, void* param );
     int nextIter();
     int getIterCount() const { return iterCount; }
+    int getMask(cv::Mat & binMask) const;
 private:
     void setRectInMask();
-    void setLblsInMask( int flags, Point p, bool isPr );
+    void setLblsInMask( int flags, cv::Point p, bool isPr );
 
-    const string* winName;
-    const Mat* image;
-    Mat mask;
-    Mat bgdModel, fgdModel;
+    const std::string* winName;
+    const cv::Mat* image;
+    cv::Mat mask;
+    cv::Mat bgdModel, fgdModel;
 
     uchar rectState, lblsState, prLblsState;
     bool isInitialized;
 
-    Rect rect;
-    vector<Point> fgdPxls, bgdPxls, prFgdPxls, prBgdPxls;
+    cv::Rect rect;
+    std::vector<cv::Point> fgdPxls, bgdPxls, prFgdPxls, prBgdPxls;
     int iterCount;
 };
 
+void grabCutDemo(const cv::Mat &, cv::Mat & );
 
 };
 
