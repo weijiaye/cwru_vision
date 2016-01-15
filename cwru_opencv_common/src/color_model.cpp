@@ -19,20 +19,38 @@ namespace cv_color_model{
 
 ColorModel::colorModel(const Mat & sourceImage, const cv::Mat maskImage){
     // To obtain a full covariance matrix, use the calcCovar
-    
-    Mat colorStdDev;
-    meanStdDev(sourceImage, static_cast<Mat> (colorMean), (colorStdDev), maskImage);
-    void calcCovarMatrix(InputArray samples, OutputArray covar, OutputArray mean, int flags, int ctype=CV_64F);
+    int nonZero(countNonZero(maskImage));
+    Mat samplesMat(1,nonZero,sourceImage.type());
+    // For now, a really slow painful form is implemented.
+    int nonZeroIndex(0); 
+    for ( int i(0); i < maskImage.rows*maskImage.cols; i++)
+    {
+        if (maskImage.at<uchar>(i) > 0 )
+        {
+             samplesMat.at<vec3b>(nonZeroIndex) = sourceImage.at<vec3b>(i);
+        }
+    }
+    Mat covar,mean;
+    calcCovarMatrix(samplesMat,covar,  mean, CV_COVAR_NORMAL);
     //Generate the full data.
-}
-
-ColorModel::colorModel(const Mat & sourceImage){
-    
+    //assign it to the mean and covariance.
 }
 
 cv::Mat ColorModel::segmentImage(Mat &inputImage){
  
- 
+ Mat result(inputImage.size(),CV_32FC1);
+ float maxResult = -1;
+ Matx<3,1>
+ for (int i(0); i < inputImage.rows*imputImage.cols)
+ {
+     // Fill this line in with the covariant probability density function.
+     // Available: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
+    Vec3b  tempVec(sourceImage.at<Vec3b>(i));
+    
+ }
+ //normalize result
+ result = result/-1;
+ return result;
 }
 
 }; //namespace cv_color_model
