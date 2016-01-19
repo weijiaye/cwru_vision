@@ -11,46 +11,110 @@
  */
 
 
-#include <cwru_opencv_common/color_model.h>
+
+#include <ros/ros.h>
+
+#include <cwru_opencv_common/color_model.hpp>
 
 using cv::Mat;
 
+
 namespace cv_color_model{
 
-ColorModel::colorModel(const Mat & sourceImage, const cv::Mat maskImage){
+ColorModel::ColorModel(const Mat & sourceImage, const cv::Mat& maskImage){
     // To obtain a full covariance matrix, use the calcCovar
     int nonZero(countNonZero(maskImage));
-    Mat samplesMat(1,nonZero,sourceImage.type());
+    Mat samplesMat(3,nonZero,CV_32FC1);
     // For now, a really slow painful form is implemented.
     int nonZeroIndex(0); 
     for ( int i(0); i < maskImage.rows*maskImage.cols; i++)
     {
         if (maskImage.at<uchar>(i) > 0 )
         {
-             samplesMat.at<vec3b>(nonZeroIndex) = sourceImage.at<vec3b>(i);
+            cv::Vec3b pixelVal(sourceImage.at< cv::Vec3b >(i));
+            
+            samplesMat.at< float >(0, nonZeroIndex) = pixelVal[0];
+            samplesMat.at< float >(1, nonZeroIndex) = pixelVal[1];
+            samplesMat.at< float >(2, nonZeroIndex) = pixelVal[2];
+            
+            nonZeroIndex++;
         }
     }
     Mat covar,mean;
-    calcCovarMatrix(samplesMat,covar,  mean, CV_COVAR_NORMAL);
-    //Generate the full data.
-    //assign it to the mean and covariance.
+    calcCovarMatrix(samplesMat,covar,  mean, CV_COVAR_NORMAL+CV_COVAR_COLS+CV_COVAR_SCALE,CV_32F);
+    // Generate the full data.
+    // Assign it to the mean and covariance.
+    for (int i(0); i < 9; i++ )
+    {
+        colorVariance(i) = covar.at<float>(i);
+        if (i < 3)
+        {
+            colorMean(i) = mean.at<float>(i);
+        }
+    }
 }
 
 cv::Mat ColorModel::segmentImage(Mat &inputImage){
  
- Mat result(inputImage.size(),CV_32FC1);
- float maxResult = -1;
- Matx<3,1>
- for (int i(0); i < inputImage.rows*imputImage.cols)
+    Mat result(inputImage.size(), CV_32FC1);
+    float maxResult = -1;
+ cv::Matx<float, 3,1> tempMat;
+
+    // Pre-compute variables that will be needed inside the for loop.
+    cv::Matx< float, 3, 3 > inverse = colorVariance.inv(cv::DECOMP_CHOLESKY);
+    float  det(cv::determinant(colorVariance));
+    float denom(sqrt(3.14*3.14*3.14*8*det));
+    float frac(1/denom);
+    
+    ROS_INFO("Pre computed the relevent data");
+
+
+ for (int i(0); i < inputImage.rows*inputImage.cols; i++)
  {
      // Fill this line in with the covariant probability density function.
      // Available: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
-    Vec3b  tempVec(sourceImage.at<Vec3b>(i));
-    
+    cv::Vec3b  tempVec(inputImage.at<cv::Vec3b>(i));
+
+    // if (i == 0) ROS_INFO("Data 1)");
+
+
+    tempMat(0) = static_cast<float> (tempVec[0]);
+    tempMat(1) = static_cast<float> (tempVec[1]);
+    tempMat(2) = static_cast<float> (tempVec[2]);
+
+    cv::Matx<float, 3, 1> diff(tempMat-colorMean);
+
+    // if (i == 0) ROS_INFO("Data 1)");
+
+
+    cv::Matx<float, 1, 1> exponMatx(diff.t()*inverse*diff*-0.5);
+
+
+    // if (i == 0) ROS_INFO("Data 1)");
+
+    float pixelVal(frac*exp(exponMatx(0)));
+
+    // if (i == 0) ROS_INFO("Data 1)");
+
+    result.at<float>(i) = pixelVal;
+
+    // if (i == 0) ROS_INFO("Data 1)");
+
+    if(pixelVal > maxResult)
+    {
+        maxResult = pixelVal;
+    }
+
  }
  //normalize result
- result = result/-1;
+ result = result*(1/maxResult);
  return result;
+}
+
+void ColorModel::printModelInfo()
+{
+    ROS_INFO("Color mean is < %f , %f , % f >", colorMean(0), colorMean(1), colorMean(2));
+    ROS_INFO_STREAM("Color covariance is " << std::endl <<  colorVariance << std::endl);
 }
 
 }; //namespace cv_color_model

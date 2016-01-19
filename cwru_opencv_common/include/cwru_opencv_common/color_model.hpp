@@ -2,7 +2,7 @@
  * color_model.hpp
  * Copyright 2016  Russell Jackson, All Rights Reserved
  */
- 
+
 /*
  * This file defines a class of color tracking model.
  * The model assumes that a color distribution is a gaussian in RGB space. 
@@ -25,12 +25,17 @@ public:
   explicit ColorModel(const cv::Mat & , const cv::Mat &); //uses a pre-defined mask
   explicit ColorModel(const cv::Mat &); //manually defined mask.
 
-  cv::Mat segmentImage(Mat &); 
+  cv::Mat segmentImage(cv::Mat &); 
 
+  void printModelInfo();
 
 private:
+    cv::Matx<float, 3, 3> colorVariance;
+    cv::Matx<float, 3, 1> colorMean;
+};
 
-    cv::Matx<3,3,CV_32FC1> colorvariance;
-    cv::Matx<3,1,CV32FC1> colorMean;
+};  // namespace cv_color_model
 
-}; //namespace cv_color_model
+
+
+#endif

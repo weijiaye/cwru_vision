@@ -63,7 +63,9 @@ add_library(grab_cut_lib
     src/grab_cut.cpp
 )
 
-
+add_library(color_model_lib
+    src/color_model.cpp
+)
 
 
 
