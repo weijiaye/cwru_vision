@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib
+    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib
     CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
     #   DEPENDS system_lib
 )
@@ -59,6 +59,9 @@ add_library(projective_lib
 )
 
 
+add_library(grab_cut_lib
+    src/grab_cut.cpp
+)
 
 
 
