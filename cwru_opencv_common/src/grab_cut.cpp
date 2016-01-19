@@ -217,7 +217,7 @@ void GrabCutObject::mouseClick( int event, int x, int y, int flags, void* )
 int GrabCutObject::getMask(Mat & binMask) const
 {
     if( binMask.empty() || binMask.rows!=mask.rows || binMask.cols!=mask.cols ) binMask.create( mask.size(), CV_8UC1 );
-    binMask = mask & 1;
+    binMask = (mask & 1)*255;
 }
 
 int GrabCutObject::nextIter()
