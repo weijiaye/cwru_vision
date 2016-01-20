@@ -21,6 +21,18 @@ using cv::Mat;
 
 namespace cv_color_model{
 
+ColorModel::ColorModel(const ColorModel& source_){
+        
+    for (int i(0); i < 9; i++)
+    {
+        if (i < 3)
+        {
+            this->colorMean(i) = source_.colorMean(i);
+        }
+        this->colorVariance(i) = source_.colorVariance(i);
+    }
+}
+
 ColorModel::ColorModel(const Mat & sourceImage, const cv::Mat& maskImage){
     // To obtain a full covariance matrix, use the calcCovar
     int nonZero(countNonZero(maskImage));
@@ -66,7 +78,7 @@ cv::Mat ColorModel::segmentImage(Mat &inputImage){
     float denom(sqrt(3.14*3.14*3.14*8*det));
     float frac(1/denom);
     
-    ROS_INFO("Pre computed the relevent data");
+
 
 
  for (int i(0); i < inputImage.rows*inputImage.cols; i++)

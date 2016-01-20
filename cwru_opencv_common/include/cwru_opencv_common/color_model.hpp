@@ -23,6 +23,7 @@ class ColorModel{
 
 public:
   explicit ColorModel(const cv::Mat & , const cv::Mat &); //uses a pre-defined mask
+  explicit ColorModel(const ColorModel&);  // copy constructor;
   explicit ColorModel(const cv::Mat &); //manually defined mask.
 
   cv::Mat segmentImage(cv::Mat &); 
