@@ -255,32 +255,71 @@ stereoCorrespondence reprojectPointTangent(const cv::Point3d &point,const cv::Po
 cv::Point3d deprojectStereoTangent(const cv_local::stereoCorrespondence &imagePoint,const cv_local::stereoCorrespondence &imagePointTangent,const cv::Mat &P_l ,const cv::Mat &P_r )
 {
 
- /*Mat pts_l(2,1,CV_64FC1);
-    Mat pts_r(2,1,CV_64FC1);
+    cv::Point3d pt3d(deprojectStereoPoint(imagePoint , P_l , P_r));
 
-    pts_l.at<double>(0) = inputPts.left.x;
-    pts_l.at<double>(1) = inputPts.left.y;
+    Mat Ki_l = P_l.colRange(0, 4).inv(DECOMP_LU);
+    Mat Ki_r = P_r.colRange(0, 4).inv(DECOMP_LU);
 
-    pts_r.at<double>(0) = inputPts.right.x;
-    pts_r.at<double>(1) = inputPts.right.y;
+    // Matrixfy the points...
+    Mat pts_l(3, 1, CV_64FC1);
+    Mat pts_r(3, 1, CV_64FC1);
 
-    Mat objPts3d;
-    triangulatePoints(P_l,P_r,pts_l,pts_r,objPts3d);
+    pts_l.at<double>(0) = imagePoint.left.x;
+    pts_l.at<double>(1) = imagePoint.left.y;
+    pts_l.at<double>(2) = 1.0;
 
-    double scale = objPts3d.at<double>(3);
+    pts_r.at<double>(0) = imagePoint.right.x;
+    pts_r.at<double>(1) = imagePoint.right.y;
+    pts_r.at<double>(2) = 1.0;
 
-    Point3d outputPt;
+    Mat pts_dl(3, 1, CV_64FC1);
+    Mat pts_dr(3, 1, CV_64FC1);
 
-    outputPt.x = objPts3d.at<double>(0)/scale;
-    outputPt.y = objPts3d.at<double>(1)/scale;
-    outputPt.z = objPts3d.at<double>(2)/scale;
+    pts_dl.at<double>(0) = imagePointTangent.left.x;
+    pts_dl.at<double>(1) = imagePointTangent.left.y;
+    pts_dl.at<double>(2) = 0.0;
 
-    return outputPt; */
-    return Point3d(0,0,0);
+    pts_dr.at<double>(0) = imagePointTangent.right.x;
+    pts_dr.at<double>(1) = imagePointTangent.right.y;
+    pts_dr.at<double>(2) = 0;
+
+    // Set up the colums
+
+    // rhs...
+
+    Mat rhs = Ki_l*pts_l;
+
+    // lhs ratio mat.
+
+    Mat lhsMat(3,3,CV_64FC1);
+
+    Mat(Ki_l*pts_dl*(-1.0)).copyTo(lhsMat.col(0));
+    Mat(Ki_r*pts_r).copyTo(lhsMat.col(1));
+    Mat(Ki_r*pts_dr).copyTo(lhsMat.col(2));
+
+    Mat results = lhsMat.inv(DECOMP_LU)*rhs;
+
+    ROS_INFO_STREAM("Results of the lambdas\n" << results);
+
+    Mat tangent = rhs+Ki_l*results.at<double>(0);
+
+    ROS_INFO_STREAM("Image space tangent\n" << tangent);
+
+
+    Point3d outputTan;
+
+    outputTan.x = tangent.at<double>(0);
+    outputTan.y = tangent.at<double>(1);
+    outputTan.z = tangent.at<double>(2);
+
+    double scale(norm(outputTan));
+
+    // normalize the output results.
+    return outputTan*(1/scale);
 }
 
 
-cv::Point3d deprojectStereoPoint(const cv_local::stereoCorrespondence inputPts,const  cv::Mat &P_l ,const cv::Mat &P_r)
+cv::Point3d deprojectStereoPoint(const cv_local::stereoCorrespondence inputPts, const  cv::Mat &P_l , const cv::Mat &P_r)
 {
     //construct the output mat:
     Mat results(4,1,CV_64FC1);
