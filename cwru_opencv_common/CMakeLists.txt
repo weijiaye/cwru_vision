@@ -42,6 +42,10 @@ add_library(opencv_3d_lib
     src/opencv_geometry_3d.cpp
 )
 
+add_library(opencv_2d_lib
+    src/opencv_geometry_2d.cpp
+)
+
 add_library(opencv_ui_lib
     src/opencv_ui.cpp
 )

@@ -112,7 +112,7 @@ cv::Mat ColorModel::segmentImage(Mat &inputImage){
 
     // if (i == 0) ROS_INFO("Data 1)");
 
-    if(pixelVal > maxResult)
+    if (pixelVal > maxResult)
     {
         maxResult = pixelVal;
     }
