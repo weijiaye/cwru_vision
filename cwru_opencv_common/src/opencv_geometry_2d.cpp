@@ -45,12 +45,16 @@ double blobCenterDirections(const Mat & imageMask, Point2d* center, Point2d* maj
     {
         Point2d dirP(eigenVec.at<double>(0), eigenVec.at<double>(1));
         dirP *= 1/(norm(dirP));
+        major-> x = dirP.x;
+        major-> y = dirP.y;
     }
 
     if ( minor != NULL )
     {
         Point2d dirT(eigenVec.at<double>(2), eigenVec.at<double>(3));
         dirT *= 1/(norm(dirT));
+        minor->x = dirT.x;
+        minor->y = dirT.y;
     }
     if (abs(eigenVal.at<double>(1)) >  abs(eigenVal.at<double>(0)) )
     {

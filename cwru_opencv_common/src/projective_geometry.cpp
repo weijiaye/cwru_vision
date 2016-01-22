@@ -257,8 +257,8 @@ cv::Point3d deprojectStereoTangent(const cv_local::stereoCorrespondence &imagePo
 
     cv::Point3d pt3d(deprojectStereoPoint(imagePoint , P_l , P_r));
 
-    Mat Ki_l = P_l.colRange(0, 4).inv(DECOMP_LU);
-    Mat Ki_r = P_r.colRange(0, 4).inv(DECOMP_LU);
+    Mat Ki_l = P_l.colRange(0, 3).inv(DECOMP_LU);
+    Mat Ki_r = P_r.colRange(0, 3).inv(DECOMP_LU);
 
     // Matrixfy the points...
     Mat pts_l(3, 1, CV_64FC1);
@@ -297,11 +297,18 @@ cv::Point3d deprojectStereoTangent(const cv_local::stereoCorrespondence &imagePo
     Mat(Ki_r*pts_r).copyTo(lhsMat.col(1));
     Mat(Ki_r*pts_dr).copyTo(lhsMat.col(2));
 
+    ROS_INFO_STREAM("points: " << imagePoint.left << imagePoint.right);
+    ROS_INFO_STREAM("tangents: " << imagePointTangent.left << imagePointTangent.right);
+
+    ROS_INFO_STREAM("Ki's " << Ki_l << Ki_r);
+
+    ROS_INFO_STREAM("Matrix Equation\n" << rhs << lhsMat);
+
     Mat results = lhsMat.inv(DECOMP_LU)*rhs;
 
     ROS_INFO_STREAM("Results of the lambdas\n" << results);
 
-    Mat tangent = rhs+Ki_l*results.at<double>(0);
+    Mat tangent = rhs+Ki_l*pts_dl*results.at<double>(0);
 
     ROS_INFO_STREAM("Image space tangent\n" << tangent);
 
