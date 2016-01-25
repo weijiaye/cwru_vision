@@ -66,7 +66,7 @@ ColorModel::ColorModel(const Mat & sourceImage, const cv::Mat& maskImage){
     }
 }
 
-cv::Mat ColorModel::segmentImage(Mat &inputImage){
+cv::Mat ColorModel::segmentImage(const Mat &inputImage){
  
     Mat result(inputImage.size(), CV_32FC1);
     float maxResult = -1;
