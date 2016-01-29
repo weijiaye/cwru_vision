@@ -34,6 +34,23 @@ ColorModel::ColorModel(const ColorModel& source_){
 }
 
 ColorModel::ColorModel(const Mat & sourceImage, const cv::Mat& maskImage){
+    if (maskImage.type() == CV_8UC1)
+    {
+        binaryMaskInit(sourceImage,maskImage);
+    }
+    else if (maskImage.type() == CV_32FC1)
+    {
+        floatMaskInit(sourceImage,maskImage);
+    }
+    else
+    {
+        // Error of some sort
+    }
+
+}
+
+
+void ColorModel::binaryMaskInit(const Mat & sourceImage, const cv::Mat& maskImage){
     // To obtain a full covariance matrix, use the calcCovar
     int nonZero(countNonZero(maskImage));
     Mat samplesMat(3,nonZero,CV_32FC1);
@@ -66,11 +83,45 @@ ColorModel::ColorModel(const Mat & sourceImage, const cv::Mat& maskImage){
     }
 }
 
+void ColorModel::floatMaskInit(const Mat & sourceImage, const cv::Mat& maskImage){
+    // To obtain a full covariance matrix, use the calcCovar
+    int nonZero(countNonZero(maskImage));
+    Mat samplesMat(3,nonZero,CV_32FC1);
+    // For now, a really slow painful form is implemented.
+    int nonZeroIndex(0); 
+    cv::Scalar maskSum(sum(maskImage));
+    for ( int i(0); i < maskImage.rows*maskImage.cols; i++)
+    {
+        if (maskImage.at<float>(i) > 0 )
+        {
+            cv::Vec3b pixelVal(sourceImage.at< cv::Vec3b >(i));
+            
+            samplesMat.at< float >(0, nonZeroIndex) = static_cast<float> (pixelVal[0])*maskImage.at<float>(i)/maskSum[0];
+            samplesMat.at< float >(1, nonZeroIndex) = static_cast<float> (pixelVal[1])*maskImage.at<float>(i)/maskSum[0];
+            samplesMat.at< float >(2, nonZeroIndex) = static_cast<float> (pixelVal[2])*maskImage.at<float>(i)/maskSum[0];
+            nonZeroIndex++;
+        }
+    }
+    float nonZeroNum(nonZeroIndex);
+    Mat covar, mean;
+    calcCovarMatrix(samplesMat,covar,  mean, CV_COVAR_NORMAL+CV_COVAR_COLS+CV_COVAR_SCALE,CV_32F);
+    // Generate the full data.
+    // Assign it to the mean and covariance.
+    for (int i(0); i < 9; i++ )
+    {
+        colorVariance(i) = covar.at<float>(i)*nonZeroNum;
+        if (i < 3)
+        {
+            colorMean(i) = mean.at<float>(i)*nonZeroNum;
+        }
+    }
+}
+
 cv::Mat ColorModel::segmentImage(const Mat &inputImage){
  
     Mat result(inputImage.size(), CV_32FC1);
     float maxResult = -1;
- cv::Matx<float, 3,1> tempMat;
+    cv::Matx<float, 3,1> tempMat;
 
     // Pre-compute variables that will be needed inside the for loop.
     cv::Matx< float, 3, 3 > inverse = colorVariance.inv(cv::DECOMP_CHOLESKY);

@@ -30,6 +30,9 @@ public:
 
   void printModelInfo();
 
+  void floatMaskInit(const cv::Mat &, const cv::Mat&);
+  void binaryMaskInit(const cv::Mat &, const cv::Mat&);
+
 private:
     cv::Matx<float, 3, 3> colorVariance;
     cv::Matx<float, 3, 1> colorMean;
