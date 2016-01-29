@@ -590,6 +590,11 @@ namespace cv_3d
 
         // left image update:
 
+        // add a switch in case flipping the eigen vec makes it smaller.
+        if(vec10_l.dot(dirP_l) < 0 )
+        {
+            dirP_l *= -1.0;
+        }
         Point3d omega_l(vec10_l.cross(dirP_l));
         double theta_l(asin(omega_l.z)*rot_gain);
 
@@ -605,7 +610,10 @@ namespace cv_3d
 
 
         // right image:
-
+        if(vec10_r.dot(dirP_r) < 0 )
+        {
+            dirP_l *= -1.0;
+        }
         Point3d omega_r(vec10_r.cross(dirP_r));
         double theta_r(asin(omega_r.z)*rot_gain);
 
