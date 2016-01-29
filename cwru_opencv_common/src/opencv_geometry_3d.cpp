@@ -612,7 +612,7 @@ namespace cv_3d
         // right image:
         if(vec10_r.dot(dirP_r) < 0 )
         {
-            dirP_l *= -1.0;
+            dirP_r *= -1.0;
         }
         Point3d omega_r(vec10_r.cross(dirP_r));
         double theta_r(asin(omega_r.z)*rot_gain);
