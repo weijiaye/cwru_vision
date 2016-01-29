@@ -590,6 +590,7 @@ namespace cv_3d
 
         // left image update:
 
+
         Point3d omega_l(vec10_l.cross(dirP_l));
         double theta_l(asin(omega_l.z)*rot_gain);
 
