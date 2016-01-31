@@ -55,7 +55,7 @@ struct cylinder
     theta(theta_),
     phi(phi_),
     height(height_),
-    radius(radius_),
+    radius(radius_)
     {
     }
 };
