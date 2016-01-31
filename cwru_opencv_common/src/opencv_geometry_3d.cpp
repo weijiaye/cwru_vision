@@ -740,6 +740,17 @@ cv::Point3d computeNormalFromSpherical(double theta, double phi, OutputArray jac
 }
 
 
+cv::Point2d computeSphericalFromNormal(cv::Point3d dir_vector)
+{ 
+    Point2d cylinder_orient;
+
+    cylinder_orient.x = (atan2(dir_vector.y, dir_vector.x)); //newTheta
+    cylinder_orient.y = (acos(dir_vector.z)); //newPhi
+
+    return cylinder_orient;
+}
+
+
     cylinder baseCylinder()
     {
         cylinder newCylinder;
