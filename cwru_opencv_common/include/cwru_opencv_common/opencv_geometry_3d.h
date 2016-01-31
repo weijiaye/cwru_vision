@@ -48,16 +48,14 @@ struct cylinder
     double phi;
     double height;
     double radius;
-    cv::Point3d dir;
     // constructor
     cylinder(const cv::Point3d& center_ = cv::Point3d(0.0, 0.0, 0.0), double theta_ = 0.0,
-             double phi_ = 0.0, double height_ = 0.0, double radius_ = 0.0, const cv::Point3d& dir_ = cv::Point3d(0.0, 0.0, 0.0)):
+             double phi_ = 0.0, double height_ = 0.0, double radius_ = 0.0):
     center(center_),
     theta(theta_),
     phi(phi_),
     height(height_),
     radius(radius_),
-    dir(dir_)
     {
     }
 };
