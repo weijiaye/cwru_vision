@@ -15,7 +15,7 @@ Eigen  (?????)
 //other material, ie screws, twists, D-H params, and Quaternions.
 
 #ifndef CV_ROTATIONS_H
-#define ROBOTOPERATIONS_H
+#define CV_ROTATIONS_H
 
 
 #include <opencv2/opencv.hpp>
