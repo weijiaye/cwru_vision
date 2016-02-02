@@ -111,6 +111,37 @@ void ellipseError(const RotatedRect & originalEllipse, const RotatedRect & newEl
 
 }
 
+// Optimizes a guess of the ellipse
+void optimizeEllipse(const Mat & inputGrey, RotatedRect &ellipse)
+{
+    Mat diffX, diffY;
+
+    Scharr(inputGrey, diffX, CV_32F, 1, 0);
+    Scharr(inputGrey, diffY, CV_32F, 0, 1);
+
+    Mat ellipseRend;
+}
+
+
+// render Ellipse Grad
+void drawEllipseGrad(Mat & image, const RotatedRect &ellipse, double gaussVar, int gaussSide)
+{
+	// The goal of this function is to not simply draw the ellipse but to also incorporate the tangent information.
+	double theta(0.0);
+
+
+	while (theta < 6.28)
+	{
+        // The point and derivatives are not correct.
+        // Point2d curvePt(ellipse.center.x+ellipse.size.width*cos(theta+ellipse.angle*3.14/180.0),
+        //    ellipse.center.y+ellipse.size.height*sin(theta+ellipse.angle*3.14/180.0));
+
+        // Point2d curveDPt(ellipse.size.width*cos(theta+ellipse.angle*3.14/180.0),
+        //    ellipse.center.y+ellipse.size.height*sin(theta+ellipse.angle*3.14/180.0));
+        break;
+    }
+}
+
 /*bool RotatedRectYCompare(RotatedRect ep1, RotatedRect ep2)
 {
 	//Right now the comparison is number of points
