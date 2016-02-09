@@ -32,9 +32,13 @@ using cv::MORPH_OPEN;
 using cv::Size;
 using cv::FLOODFILL_FIXED_RANGE;
 using cv::FLOODFILL_MASK_ONLY;
+using cv::Rect;
+using cv::cvtColor;
 
 using cv::Range;
 
+namespace cv_circle
+{
 
 cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt)
 {
@@ -112,21 +116,50 @@ void ellipseError(const RotatedRect & originalEllipse, const RotatedRect & newEl
 }
 
 // Optimizes a guess of the ellipse
-void optimizeEllipse(const Mat & inputGrey, RotatedRect &ellipse)
+void optimizeEllipseBW(const cv::Mat & inputImage, cv::RotatedRect &ellipse, int padding)
 {
+    Rect imageRect(Point(0, 0), inputImage.size());
+
+    Rect boundRect(ellipse.boundingRect());
+
+    boundRect += Size(padding, padding);
+    boundRect -= Point(padding, padding);
+
+    boundRect &= imageRect;
+
+    Mat subImg(inputImage(boundRect));
+    Mat grayImg_, grayImg;
+
+    //  Make the image gray
+    cvtColor(subImg, grayImg_, CV_BGR2GRAY);
+
+    //  perform a quick blur.
+    GaussianBlur(grayImg_, grayImg, Size(7, 7) , 1.5, 1.5);
+
+
     Mat diffX, diffY;
 
-    Scharr(inputGrey, diffX, CV_32F, 1, 0);
-    Scharr(inputGrey, diffY, CV_32F, 0, 1);
+    Scharr(grayImg, diffX, CV_32F, 1, 0);
+    Scharr(grayImg, diffY, CV_32F, 0, 1);
 
-    Mat ellipseRend;
+    // the grad mag.
+    Mat gradMag(diffX.mul(diffX)+diffY.mul(diffY));
+
+    Mat gradx, grady;
+    Scharr(gradMag, gradx, CV_32F, 1, 0);
+    Scharr(gradMag, grady, CV_32F, 0, 1);
+
+    // not done yet
+
+    // figure out the ellipse rendering in order generate the gradient
+    // Mat ellipseRend;
 }
 
 
 // render Ellipse Grad
 void drawEllipseGrad(Mat & image, const RotatedRect &ellipse, double gaussVar, int gaussSide)
 {
-	// The goal of this function is to not simply draw the ellipse but to also incorporate the tangent information.
+    // The goal of this function is to not simply draw the ellipse but to also incorporate the tangent information.
 	double theta(0.0);
 
 
@@ -2459,3 +2492,5 @@ void exportEllipseFile(const char* filePath,std::vector<RotatedRect> &inputEllip
 	fclose(pFile);
 }
 */
+
+}; // cv_circle

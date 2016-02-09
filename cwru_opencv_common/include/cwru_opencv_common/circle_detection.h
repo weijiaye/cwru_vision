@@ -36,8 +36,6 @@
  */
 
 
-
-
 #ifndef FIDUCIALCIRCLES_H
 #define FIDUCIALCIRCLES_H
 // Opencv Includes
@@ -45,6 +43,8 @@
 #include <opencv2/opencv.hpp>
 // #include "Third_Party\opencv.h"
 
+namespace cv_circle
+{
 
 /*class FiducialCircles: public FiducialBase {
 	
@@ -226,6 +226,17 @@ private:
 //  void exportEllipseFile(const char*,std::vector<RotatedRect> &);
 
 
+/*
+ * This function generates an ellipse based on an initial seed point.
+ */
 cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt);
+
+
+/*
+ * This function optimizes an ellipse based on an initial seed ellipse.
+ */
+void optimizeEllipseBW(const cv::Mat & inputImg, cv::RotatedRect &ellipse, int padding);
+
+}; //  cv_circle
 
 #endif
