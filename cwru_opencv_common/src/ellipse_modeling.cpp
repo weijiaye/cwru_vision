@@ -15,12 +15,18 @@
 using namespace cv;
 using namespace cv_local;
 
-Mat ellipse2Mat(RotatedRect input)
+namespace cv_ellipse
+{
+
+Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
 {
 
     Mat conicMat(3, 3, CV_64FC1);
 
     //generate the first stage of parameters.
+    const double dadw(0.5);
+    const double dbdh(0.5);
+    const double dthetadangle(3.14159265359/180.0);
     double a = input.size.width/2;
     double b = input.size.height/2;
     double xc = input.center.x;
@@ -38,6 +44,71 @@ Mat ellipse2Mat(RotatedRect input)
     double E = -B*xc-2*C*yc;
     double F = A*xc*xc+B*xc*yc+C*yc*yc-a*a*b*b;
 
+    if ( matJac.needed() )
+    {
+        
+
+        matJac.create(6,5,CV_32FC1);
+
+        Mat matJac_ =  matJac.getMat();
+
+        // derivative of A.
+        double dAda(2.0*a*stheta*stheta);
+        double dAdb(2.0*b*ctheta*ctheta);
+        double dAdtheta(-B);
+
+        matJac_.at< float > (0, 0) = static_cast<float> (dAda*dadw);  // dA/dWidth
+        matJac_.at< float > (0, 1) = static_cast<float> (dadb*dbdh);  // dA/dheight
+        matJac_.at< float > (0, 2) = static_cast<float> (-B*dthetadangle);  // dA/dangle
+        matJac_.at< float > (0, 3) = 0.0;  // dA/dcx
+        matJac_.at< float > (0, 4) = 0.0;  // dA/dcy
+
+        // derivative of B
+        double dBda(-4*a*stheta*ctheta);
+        double dBdb(4*b*stheta*ctheta);
+        double dBdtheta(2*A-2*C);
+
+        matJac_.at< float > (1, 0) = static_cast<float> (dBda*dadw);  // dB/dWidth
+        matJac_.at< float > (1, 1) = static_cast<float> (dBdb*dbdh);  // dB/dheight
+        matJac_.at< float > (1, 2) = static_cast<float> (dBdtheta*dthetadangle);  // dB/dangle
+        matJac_.at< float > (1, 3) = 0.0; //dB/dcx
+        matJac_.at< float > (1, 4) = 0.0; //dB/dcy
+
+        // derivative of C
+        double dCda(2*a*ctheta*ctheta);
+        double dCdb(2*b*stheta*stheta);
+        double dCdtheta(B);
+        matJac_.at< float > (2,0) = static_cast<float> (dCda*dadw); // dC/dWidth
+        matJac_.at< float > (2,1) = static_cast<float> (dCdb*dbdh); // dC/dheight
+        matJac_.at< float > (2,2) = static_cast<float> (dCdtheta*dthetadangle); //dC/dangle
+        matJac_.at< float > (2,3) = 0.0; //dB/dcx
+        matJac_.at< float > (2,4) = 0.0; //dB/dcy
+
+        // derivative of D
+        matJac_.at< float > (3, 0) = static_cast<float> ((-2*xc*dAda-yc*dBda)*dadw);  // dD/dWidth
+        matJac_.at< float > (3, 1) = static_cast<float> ((-2*xc*dAdb-yc*dBdb)*dbdh);  // dD/dheight
+        matJac_.at< float > (3, 2) = static_cast<float> ((-2*xc*dAdtheta-yc*dBdtheta)*dthetadangle);  // dD/dangle
+        matJac_.at< float > (3, 3) = static_cast<float> (-2*A);  // dD/dcx
+        matJac_.at< float > (3, 4) = static_cast<float> (-B);  // dD/dcy
+
+        // derivative of E
+        matJac_.at< float > (4, 0) = static_cast<float> ((-xc*dBda-2*yc*dCda)*dadw);  // dE/dWidth
+        matJac_.at< float > (4, 1) = static_cast<float> ((-xc*dBdb-2*yc*dCdb)*dbdh);  // dE/dheight
+        matJac_.at< float > (4, 2) = static_cast<float> ((-xc*dBdtheta-2*yc*dCdtheta)*dthetadangle);  // dE/dangle
+        matJac_.at< float > (4, 3) = static_cast<float> (-B);  // dE/dcx
+        matJac_.at< float > (4, 4) = static_cast<float> (-2C);  // dE/dcy
+
+        // derivative of F
+        matJac_.at< float > (5, 0) = static_cast<float> (
+            (xc*xc*dAda+xc*yc*dBda2+yc*yc*dCda-2*a*b*b)*dadw);  // dF/dWidth
+        matJac_.at< float > (5, 1) = static_cast<float> (
+            (xc*xc*dAdb+xc*yc*dBdb+yc*yc*dCdb-2*a*a*b)*dbdh);  // dF/dheight
+        matJac_.at< float > (5, 2) = static_cast<float> (
+            (xc*xc*dAdtheta+xc*yc*dBdtheta+yc*yc*dCdtheta)*dthetadangle);  // dF/dangle
+        matJac_.at< float > (5, 3) = static_cast<float> (2*xc*A+yc*B);  // dF/dcx
+        matJac_.at< float > (5, 4) = static_cast<float> (2*yc*C+xc*B);  // dF/dcy
+
+    }
 
     conicMat.at<double>(0,0) = A;
     conicMat.at<double>(1,1) = C;
@@ -58,34 +129,33 @@ Mat ellipse2Mat(RotatedRect input)
 
 Mat findEllipseRotTransMat(RotatedRect ellipse, double radius, Mat intrinsics)
 {
+    Mat circleMat = Mat::eye(3, 3, CV_64FC1);
+    circleMat.at<double>(2, 2) = -radius*radius;
 
-    Mat circleMat = Mat::eye(3,3,CV_64FC1);
-    circleMat.at<double>(2,2) = -radius*radius;
-	
-	std::cout << std::endl;
-	std::cout << circleMat;
-	std::cout << std::endl;
-    
-	Mat ellipseMat = ellipse2Mat(ellipse);
+    std::cout << std::endl;
+    std::cout << circleMat;
+    std::cout << std::endl;
 
-	std::cout << std::endl;
-	std::cout << ellipseMat;
-	std::cout << std::endl;
+    Mat ellipseMat = ellipse2Mat(ellipse);
+
+    std::cout << std::endl;
+    std::cout << ellipseMat;
+    std::cout << std::endl;
 
     Mat rotTrans;
 
-	std::cout << std::endl;
-	std::cout << intrinsics;
-	std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << intrinsics;
+    std::cout << std::endl;
 
     rotTrans = intrinsics.inv()*ellipseMat*circleMat.inv();
 
     Mat r0 = rotTrans.col(0);
     Mat r1 = rotTrans.col(1);
 
-	std::cout << std::endl;
-	std::cout << rotTrans;
-	std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << rotTrans;
+    std::cout << std::endl;
 
     double n0 = norm(r0);
     double n1 = norm(r1);
@@ -98,87 +168,75 @@ Mat findEllipseRotTransMat(RotatedRect ellipse, double radius, Mat intrinsics)
 }
 
 
-
-stereoCorrespondence reprojectPointStereo(const Point3d &point, const Mat &P_l, const Mat &P_r)
+double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect)
 {
+    Mat imageMask(subImage.size(), CV_8UC1);
+    int totalSize(subImage.rows*subimage.cols);
+    imageMask = 0;
+    ellipse(imageMask, ellipseRect, Scalar(1), 5); //line width is variable (5)
 
-        stereoCorrespondence output;
-        Mat ptMat(4,1,CV_64FC1);
-        Mat results(3,1,CV_64FC1);
+    int results = countNonzero(imageMask);
 
-        Mat stP[2];
+    Mat deriv(results, 6);
+    int nonZeroIndex(0);
 
-        stP[0]= P_l;
-        stP[1]= P_r;
+    Mat jacobian;
+    Mat ellipseMat = ellipse2Mat(ellipseRect, jacobian);
+    Mat vect(3,1,CV_32FC1);
 
-        ptMat.at<double>(0,0) = point.x;
-        ptMat.at<double>(1,0) = point.y;
-        ptMat.at<double>(2,0) = point.z;
-        ptMat.at<double>(3,0) = 1.0;
+    float totalVal = 0.0;
+    for (int i = 0; i < subImage.totalSize; i++)
+    {
+        if (imageMask.at < usigned char > (i) > 0)
+        { 
+            int x = i % subImage.size.width;
+            int y = i / (subImage.size.height);
 
-        for(int lr = 0; lr < 2; lr++){
-            results = stP[lr]*ptMat;
-            output[lr].x = results.at<double>(0,0)/results.at<double>(2,0);
-            output[lr].y = results.at<double>(1,0)/results.at<double>(2,0);
+            vect.at<float> (0) = static_cast<float> (x);
+            vect.at<float> (1) = static_cast<float> (y);
+            vect.at<float> (2) = static_cast<float> (1.0);
+
+
+            float value =  getResultsDerivative(vect, ellipseMat, derivEllipse);
         }
-
-        return output;
-}
-
-
-stereoCorrespondence reprojectPointTangent(const cv::Point3d &point,const cv::Point3d &pointDeriv,const Mat & P_l , const Mat & P_r )
-{
-
-    stereoCorrespondence tempDeriv;
-    stereoCorrespondence tempOutput;
-    Mat ptDMat(4,2,CV_64FC1);
-    Mat dResults(3,2,CV_64FC1);
-    Mat stP[2];
-
-    stP[0]= P_l;
-    stP[1]= P_r;
-
-
-    ptDMat.at<double>(0,0) = point.x;
-    ptDMat.at<double>(1,0) = point.y;
-    ptDMat.at<double>(2,0) = point.z;
-    ptDMat.at<double>(3,0) = 1.0;
-    ptDMat.at<double>(0,1) = pointDeriv.x;
-    ptDMat.at<double>(1,1) = pointDeriv.y;
-    ptDMat.at<double>(2,1) = pointDeriv.z;
-    ptDMat.at<double>(3,1) = 0.0; //This is a vector and not a point...
-
-
-    for(int lr = 0; lr < 2; lr++){
-        dResults = stP[lr]*ptDMat;
-        tempDeriv[lr].x = (dResults.at<double>(2,0)*dResults.at<double>(0,1)-dResults.at<double>(0,0)*dResults.at<double>(2,1))/(dResults.at<double>(2,0)*dResults.at<double>(2,0));
-        tempDeriv[lr].y = (dResults.at<double>(2,0)*dResults.at<double>(1,1)-dResults.at<double>(1,0)*dResults.at<double>(2,1))/(dResults.at<double>(2,0)*dResults.at<double>(2,0));
     }
-    return tempDeriv;
 }
 
 
-
-cv::Point3d deprojectStereoPoint(const cv_local::stereoCorrespondence inputPts,const  cv::Mat &P_l ,const cv::Mat &P_r)
+void generatepixelValues(Mat & blankImage, const RotatedRect& ellipseRect, Mat& jacobian)
 {
-    //construct the output mat:
-    Mat results(4,1,CV_64FC1);
-    Mat p_l(2,1,CV_64FC1);
-    Mat p_r(2,1,CV_64FC1);
 
-    p_l.at<double>(0) = inputPts[0].x;
-    p_l.at<double>(1) = inputPts[0].y;
+}
 
-    p_r.at<double>(0) = inputPts[1].x;
-    p_r.at<double>(1) = inputPts[1].y;
+void generatepixelValues(Mat & blankImage, Mat & ellipseMat , Mat& jacobian)
+{
+    
+}
 
-    triangulatePoints(P_l,P_r,p_l,p_r,results);
+float getResultsDerivative(const Mat& vect,const Mat & ellipseMat, cv::OutputArray derivativeEllipse)
+{
+    Mat results = vect.t()*ellipseMat*vect;
 
-    Point3d output;
+    float output = results.at<float> (0);
 
-    output.x =  results.at<double>(0)/results.at<double>(3);
-    output.y =  results.at<double>(1)/results.at<double>(3);
-    output.z =  results.at<double>(2)/results.at<double>(3);
+    // generate the derivative.
+
+    if (derivativeEllipse.needed())
+    {
+        derivativeEllipse.create(1,6,CV_32FC1);
+
+        Mat derivativeEllipse_ =  derivativeEllipse.getMat();
+
+        derivativeEllipse_.at< float >(0)  = static_cast< float > ( vect.at < float> (0)*vect.at < float> (0));  // dvdA
+        derivativeEllipse_.at< float >(1)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (0));    // dvdB
+        derivativeEllipse_.at< float >(2)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (1));
+        derivativeEllipse_.at< float >(3)  = static_cast< float > ( vect.at < float> (0) );
+        derivativeEllipse_.at< float >(4)  = static_cast< float > ( vect.at < float> (1) );
+        derivativeEllipse_.at< float >(4)  = static_cast< float > ( 1.0 );
+    }
 
     return output;
 }
+
+
+};  // namespace cv_ellipse

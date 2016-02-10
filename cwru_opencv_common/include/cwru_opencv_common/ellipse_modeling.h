@@ -48,7 +48,8 @@
 
 #include "cwru_opencv_common/opencv_local.h"
 
-namespace cv_ellipse{
+namespace cv_ellipse
+{
 
 /**
  *  @brief ellipse2Mat takes a RotatedRect (ellipse) and generates a 3x3 Conic Mat.
@@ -59,7 +60,7 @@ namespace cv_ellipse{
  * A_q = [ A B/2 D/2; B/2 C E/2; D/2 E/2 F]
  * v = [x y 1]^T
  */
-cv::Mat ellipse2Mat(cv::RotatedRect);
+cv::Mat ellipse2Mat(cv::RotatedRect, cv::OutputArray = cv::noArray());
 
 
 /** \brief findEllipseRotTransMat takes a detected ellipse from an image. 
@@ -72,5 +73,5 @@ cv::Mat ellipse2Mat(cv::RotatedRect);
 cv::Mat findEllipseRotTransMat(cv::RotatedRect, double, cv::Mat);
 
 
-}
+};  // namespace cv_ellipse
 

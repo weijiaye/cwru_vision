@@ -145,19 +145,20 @@ void optimizeEllipseBW(const cv::Mat & inputImage, cv::RotatedRect &ellipse, int
     // the grad mag.
     Mat gradMag(diffX.mul(diffX)+diffY.mul(diffY));
 
-    Mat gradx, grady;
-    Scharr(gradMag, gradx, CV_32F, 1, 0);
-    Scharr(gradMag, grady, CV_32F, 0, 1);
-
     // not done yet
 
-    // figure out the ellipse rendering in order generate the gradient
+    // figure out the ellipse rendering in order generate the gradient.
+
+    // iterate through the ellipse points.
+    Mat ellipseDx, ellipseDy;
+
+
     // Mat ellipseRend;
 }
 
 
 // render Ellipse Grad
-void drawEllipseGrad(Mat & image, const RotatedRect &ellipse, double gaussVar, int gaussSide)
+void drawEllipseGrad(Mat & imageX, Mat & imageY, const RotatedRect &ellipse, double gaussVar, int gaussSide)
 {
     // The goal of this function is to not simply draw the ellipse but to also incorporate the tangent information.
 	double theta(0.0);
