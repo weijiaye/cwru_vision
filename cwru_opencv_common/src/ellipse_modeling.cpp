@@ -21,7 +21,7 @@ namespace cv_ellipse
 Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
 {
 
-    Mat conicMat(3, 3, CV_64FC1);
+    Mat conicMat(3, 3, CV_32FC1);
 
     //generate the first stage of parameters.
     const double dadw(0.5);
@@ -110,18 +110,18 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
 
     }
 
-    conicMat.at<double>(0,0) = A;
-    conicMat.at<double>(1,1) = C;
-    conicMat.at<double>(2,2) = F;
+    conicMat.at<float>(0,0) = A;
+    conicMat.at<float>(1,1) = C;
+    conicMat.at<float>(2,2) = F;
 
-    conicMat.at<double>(0,1) = B/2;
-    conicMat.at<double>(1,0) = B/2;
+    conicMat.at<float>(0,1) = B/2;
+    conicMat.at<float>(1,0) = B/2;
 
-    conicMat.at<double>(2,0) = D/2;
-    conicMat.at<double>(0,2) = D/2;
+    conicMat.at<float>(2,0) = D/2;
+    conicMat.at<float>(0,2) = D/2;
 
-    conicMat.at<double>(2,1) = E/2;
-    conicMat.at<double>(1,2) = E/2;
+    conicMat.at<float>(2,1) = E/2;
+    conicMat.at<float>(1,2) = E/2;
 
     return conicMat;
 }
@@ -172,6 +172,10 @@ double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect)
 {
     Mat imageMask(subImage.size(), CV_8UC1);
     int totalSize(subImage.rows*subimage.cols);
+
+    RotatedRect offsetEllipse(ellipseRect);
+    
+
     imageMask = 0;
     ellipse(imageMask, ellipseRect, Scalar(1), 5); //line width is variable (5)
 
@@ -198,6 +202,8 @@ double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect)
 
 
             float value =  getResultsDerivative(vect, ellipseMat, derivEllipse);
+
+
         }
     }
 }
