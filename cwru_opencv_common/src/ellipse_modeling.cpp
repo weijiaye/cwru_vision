@@ -123,6 +123,23 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
     conicMat.at<double>(2,1) = E/2;
     conicMat.at<double>(1,2) = E/2;
 
+    // use a test point inside the circle to ensure that the inside is negative:
+    Mat testPt(3, 1, CV_32FC1);
+    testPt.at<float>(0) = static_cast<float> input.center.x;
+    testPt.at<float>(1) = static_cast<float> input.center.y;
+    testPt.at<float>(2) = 1.0;
+
+    Mat result = testPt.t()*conicMat*testpt;
+
+    if (result.at<float>(0) > 0)
+    {
+        conicMat *= -1.0;
+        if ( matJac.needed() )
+        {
+            Mat matJac_ =  matJac.getMat();
+            matJac_ *= -1.0;
+        }
+    }
     return conicMat;
 }
 
