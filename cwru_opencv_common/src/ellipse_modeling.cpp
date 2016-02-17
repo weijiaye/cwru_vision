@@ -71,18 +71,18 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
         matJac_.at< float > (1, 0) = static_cast<float> (dBda*dadw);  // dB/dWidth
         matJac_.at< float > (1, 1) = static_cast<float> (dBdb*dbdh);  // dB/dheight
         matJac_.at< float > (1, 2) = static_cast<float> (dBdtheta*dthetadangle);  // dB/dangle
-        matJac_.at< float > (1, 3) = 0.0; //dB/dcx
-        matJac_.at< float > (1, 4) = 0.0; //dB/dcy
+        matJac_.at< float > (1, 3) = 0.0;  // dB/dcx
+        matJac_.at< float > (1, 4) = 0.0;  // dB/dcy
 
         // derivative of C
         double dCda(2*a*ctheta*ctheta);
         double dCdb(2*b*stheta*stheta);
         double dCdtheta(B);
-        matJac_.at< float > (2,0) = static_cast<float> (dCda*dadw); // dC/dWidth
-        matJac_.at< float > (2,1) = static_cast<float> (dCdb*dbdh); // dC/dheight
-        matJac_.at< float > (2,2) = static_cast<float> (dCdtheta*dthetadangle); //dC/dangle
-        matJac_.at< float > (2,3) = 0.0; //dB/dcx
-        matJac_.at< float > (2,4) = 0.0; //dB/dcy
+        matJac_.at< float > (2, 0) = static_cast<float> (dCda*dadw);  // dC/dWidth
+        matJac_.at< float > (2, 1) = static_cast<float> (dCdb*dbdh);  // dC/dheight
+        matJac_.at< float > (2, 2) = static_cast<float> (dCdtheta*dthetadangle);  //dC/dangle
+        matJac_.at< float > (2, 3) = 0.0;  // dB/dcx
+        matJac_.at< float > (2, 4) = 0.0;  // dB/dcy
 
         // derivative of D
         matJac_.at< float > (3, 0) = static_cast<float> ((-2*xc*dAda-yc*dBda)*dadw);  // dD/dWidth
@@ -107,21 +107,20 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
             (xc*xc*dAdtheta+xc*yc*dBdtheta+yc*yc*dCdtheta)*dthetadangle);  // dF/dangle
         matJac_.at< float > (5, 3) = static_cast<float> (2*xc*A+yc*B);  // dF/dcx
         matJac_.at< float > (5, 4) = static_cast<float> (2*yc*C+xc*B);  // dF/dcy
-
     }
 
-    conicMat.at<float>(0,0) = A;
-    conicMat.at<float>(1,1) = C;
-    conicMat.at<float>(2,2) = F;
+    conicMat.at<float>(0, 0) = A;
+    conicMat.at<float>(1, 1) = C;
+    conicMat.at<float>(2, 2) = F;
 
-    conicMat.at<float>(0,1) = B/2;
-    conicMat.at<float>(1,0) = B/2;
+    conicMat.at<float>(0, 1) = B/2;
+    conicMat.at<float>(1, 0) = B/2;
 
-    conicMat.at<float>(2,0) = D/2;
-    conicMat.at<float>(0,2) = D/2;
+    conicMat.at<float>(2, 0) = D/2;
+    conicMat.at<float>(0, 2) = D/2;
 
-    conicMat.at<float>(2,1) = E/2;
-    conicMat.at<float>(1,2) = E/2;
+    conicMat.at<float>(2, 1) = E/2;
+    conicMat.at<float>(1, 2) = E/2;
 
     // use a test point inside the circle to ensure that the inside is negative:
     Mat testPt(3, 1, CV_32FC1);
@@ -225,6 +224,11 @@ double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect)
     }
 }
 
+
+double ellipseEnergyFunctional(Mat & image, const RotatedRect &ellipseRect)
+{
+	
+}
 
 void generatepixelValues(Mat & blankImage, const RotatedRect& ellipseRect, Mat& jacobian)
 {
