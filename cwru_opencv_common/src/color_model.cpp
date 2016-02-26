@@ -23,13 +23,13 @@ namespace cv_color_model{
 
 ColorModel::ColorModel(const ColorModel& source_){
         
-    for (int i(0); i < 9; i++)
+    for (int i(0); i < 3; i++)
     {
-        if (i < 3)
+        this->colorMean(i) = source_.colorMean(i);
+        for (int j(0); j < 3; j++)
         {
-            this->colorMean(i) = source_.colorMean(i);
+            this->colorVariance(i,j) = source_.colorVariance(i,j);
         }
-        this->colorVariance(i) = source_.colorVariance(i);
     }
 }
 
@@ -56,12 +56,12 @@ ColorModel::ColorModel(const Mat & sourceImage, const cv::Mat& maskImage){
     calcCovarMatrix(samplesMat,covar,  mean, CV_COVAR_NORMAL+CV_COVAR_COLS+CV_COVAR_SCALE,CV_32F);
     // Generate the full data.
     // Assign it to the mean and covariance.
-    for (int i(0); i < 9; i++ )
+    for (int i(0); i < 3; i++)
     {
-        colorVariance(i) = covar.at<float>(i);
-        if (i < 3)
+        this->colorMean(i) = mean.at<float>(i);
+        for (int j(0); j < 3; j++)
         {
-            colorMean(i) = mean.at<float>(i);
+            colorVariance(i,j) = covar.at<float>(i,j);;
         }
     }
 }
