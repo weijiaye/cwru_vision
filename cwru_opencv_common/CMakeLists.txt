@@ -72,8 +72,16 @@ add_library(color_model_lib
 )
 
 
+target_link_libraries(opencv_3d_lib
+   projective_lib
+   ${OpenCV_LIBRARIES}
+   ${catkin_LIBRARIES}
+ )
 
-
+target_link_libraries(projective_lib
+   ${OpenCV_LIBRARIES}
+   ${catkin_LIBRARIES}
+ )
 
 #catkin_package(
 #    INCLUDE_DIRS include

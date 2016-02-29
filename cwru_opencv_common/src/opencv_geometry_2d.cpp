@@ -22,12 +22,12 @@ double blobCenterDirections(const Mat & imageMask, Point2d* center, Point2d* maj
     // Identify the eigenvalues.
     cv::Matx<double , 2, 2> dir;
 
-    dir(0) = maskMom.nu20;
+    dir(0,0) = maskMom.nu20;
 
-    dir(1) = maskMom.nu11;
-    dir(2) = maskMom.nu11;
+    dir(0,1) = maskMom.nu11;
+    dir(1,0) = maskMom.nu11;
 
-    dir(3) = maskMom.nu02;
+    dir(1,1) = maskMom.nu02;
 
     Mat eigenVal, eigenVec;
 

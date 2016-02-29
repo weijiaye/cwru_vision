@@ -108,6 +108,11 @@ struct cylinder
      */
     cv::Point3d computeNormalFromSpherical(double , double , cv::OutputArray=cv::noArray());
 
+    /**
+     * @brief compute the theta and phi from the mirror normal
+     */
+    cv::Point2d computeSphericalFromNormal(cv::Point3d);
+
 };
 
 #endif
