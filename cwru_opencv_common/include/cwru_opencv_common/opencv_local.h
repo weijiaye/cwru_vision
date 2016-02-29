@@ -14,10 +14,7 @@
 #define _OPENCV_LOCAL_H
 
 
-
-
-
-//#define PI 3.14159265359
+// #define PI 3.14159265359
 
 #include <opencv2/opencv.hpp>
 

@@ -69,14 +69,19 @@ struct cylinder
     cv::Rect renderSphere(cv::Mat &,const sphere& , const cv::Mat &, cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray()  );
     cv::RotatedRect renderCylinder(cv::Mat &,const cylinder&, const cv::Mat &,cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray());
 
-    void optimizeSphere(sphere &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false  );
+    double optimizeSphere(sphere &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false  );
 
-    void optimizeCylinder(cylinder &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false );
+    double optimizeCylinder(cylinder &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false );
 
     /**
      * @brief compute the mirror normal from theta and phi with an option jacobian.
      */
     cv::Point3d computeNormalFromSpherical(double , double , cv::OutputArray=cv::noArray());
+
+    /**
+     * @brief compute the theta and phi from the mirror normal
+     */
+    cv::Point2d computeSphericalFromNormal(cv::Point3d);
 
 };
 
