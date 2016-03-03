@@ -184,22 +184,34 @@ Mat findEllipseRotTransMat(RotatedRect ellipse, double radius, Mat intrinsics)
 }
 
 
-double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect)
+double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect, cv::OutputArray ellipseDerivative)
 {
     Mat imageMask(subImage.size(), CV_8UC1);
-    int totalSize(subImage.rows*subimage.cols);
+	
+	Mat subImage_x, subImage_y;
+    Scharr(subImage, subImage_x, CV_32F, 1, 0);
+    Scharr(subImage, subImage_y, CV_32F, 0, 1);
+	// compute image gradiant
+
+	
+	
+	int totalSize(subImage.rows*subimage.cols);
 
     RotatedRect offsetEllipse(ellipseRect);
     
+	// the energy is computed.
 
     imageMask = 0;
-    ellipse(imageMask, ellipseRect, Scalar(1), 5); //line width is variable (5)
+    ellipse(imageMaskOutline, ellipseRect, Scalar(1), 3); //line width is variable (5)
+	ellipse(imageMask, ellipseRect, Scalar(1), -1); //filled in ellipse.
+  
+    Mat deriv(1, 6,CV_32FC1);
 
-    int results = countNonzero(imageMask);
-
-    Mat deriv(results, 6);
-    int nonZeroIndex(0);
-
+	
+	// compute the offset vector.
+	Size subSize;
+	Point imgOffset;
+	subImage.locateROI(subSize, imgOffset);
     Mat jacobian;
     Mat ellipseMat = ellipse2Mat(ellipseRect, jacobian);
     Mat vect(3,1,CV_32FC1);
@@ -209,17 +221,27 @@ double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect)
     {
         if (imageMask.at < usigned char > (i) > 0)
         { 
-            int x = i % subImage.size.width;
-            int y = i / (subImage.size.height);
+            int x = i % subImage.size.width+imgOffset.x;
+            int y = i / (subImage.size.height)+imgOffset.y;
 
             vect.at<float> (0) = static_cast<float> (x);
             vect.at<float> (1) = static_cast<float> (y);
             vect.at<float> (2) = static_cast<float> (1.0);
 
 
-            float value =  getResultsDerivative(vect, ellipseMat, derivEllipse);
+            float value =  computeContourValue(vect, ellipseMat, derivEllipse);
+        }
+		if (imageMaskContour.at < usigned char > (i) > 0)
+        { 
+            int x = i % subImage.size.width+imgOffset.x;
+            int y = i / (subImage.size.height)+imgOffset.y;
+
+            vect.at<float> (0) = static_cast<float> (x);
+            vect.at<float> (1) = static_cast<float> (y);
+            vect.at<float> (2) = static_cast<float> (1.0);
 
 
+            float value =  compute(vect, ellipseMat, derivEllipse);
         }
     }
 }
@@ -262,6 +284,8 @@ float getResultsDerivative(const Mat& vect,const Mat & ellipseMat, cv::OutputArr
         derivativeEllipse_.at< float >(4)  = static_cast< float > ( 1.0 );
     }
 
+	// compute value;
+	
     return output;
 }
 
