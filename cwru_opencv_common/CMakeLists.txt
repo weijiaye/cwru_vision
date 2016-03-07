@@ -147,10 +147,10 @@ target_link_libraries(projective_lib
 #  #${PCL_LIBRARIES}
 #)
 
-#target_link_libraries(catheter_import_lib
-#    #opencv_imgcodecs
-#    ${catkin_LIBRARIES}
-#)
+target_link_libraries(block_detection_lib
+    opencv_local_lib
+    ${catkin_LIBRARIES}
+)
 
 
 #target_link_libraries(vesselness_image_filter_gpu_node
