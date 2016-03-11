@@ -107,12 +107,13 @@ void ColorModel::floatMaskInit(const Mat & sourceImage, const cv::Mat& maskImage
     calcCovarMatrix(samplesMat,covar,  mean, CV_COVAR_NORMAL+CV_COVAR_COLS+CV_COVAR_SCALE,CV_32F);
     // Generate the full data.
     // Assign it to the mean and covariance.
-    for (int i(0); i < 9; i++ )
+    for (int i(0); i < 3; i++ )
     {
-        colorVariance(i) = covar.at<float>(i)*nonZeroNum;
-        if (i < 3)
+        
+        colorMean(i) = mean.at<float>(i)*nonZeroNum;
+        for (int j(0); j < 3; j++)
         {
-            colorMean(i) = mean.at<float>(i)*nonZeroNum;
+            colorVariance(i,j) = covar.at<float>(i,j)*nonZeroNum;
         }
     }
 }
@@ -185,13 +186,14 @@ void ColorModel::printModelInfo()
 
 ColorModelHSV::ColorModelHSV(const ColorModelHSV& source_){
         
-    for (int i(0); i < 9; i++)
+    for (int i(0); i < 3; i++)
     {
-        if (i < 3)
+        this->colorMean(i) = source_.colorMean(i);
+
+        for (int j(0); j < 3; j++)
         {
-            this->colorMean(i) = source_.colorMean(i);
+            this->colorVariance(i,j) = source_.colorVariance(i,j);
         }
-        this->colorVariance(i) = source_.colorVariance(i);
     }
 }
 
@@ -253,12 +255,13 @@ void ColorModelHSV::binaryMaskInit(const Mat & sourceImage, const cv::Mat& maskI
     calcCovarMatrix(samplesMat,covar,  mean, CV_COVAR_NORMAL+CV_COVAR_COLS+CV_COVAR_SCALE,CV_32F);
     // Generate the full data.
     // Assign it to the mean and covariance.
-    for (int i(0); i < 9; i++ )
+    for (int i(0); i < 3; i++ )
     {
-        colorVariance(i) = covar.at<float>(i);
-        if (i < 3)
+        
+        colorMean(i) = mean.at<float>(i);
+        for (int j(0); j < 3; j++)
         {
-            colorMean(i) = mean.at<float>(i);
+            colorVariance(i,j) = covar.at<float>(i,j);
         }
     }
 }
@@ -288,12 +291,13 @@ void ColorModelHSV::floatMaskInit(const Mat & sourceImage, const cv::Mat& maskIm
 
     // Generate the full data.
     // Assign it to the mean and covariance.
-    for (int i(0); i < 9; i++ )
+    for (int i(0); i < 3; i++ )
     {
-        colorVariance(i) = covar.at<float>(i)*nonZeroNum;
-        if (i < 3)
+        
+        colorMean(i) = mean.at<float>(i)*nonZeroNum;
+        for (int j(0); j < 3; j++)
         {
-            colorMean(i) = mean.at<float>(i)*nonZeroNum;
+            colorVariance(i,j) = covar.at<float>(i,j)*nonZeroNum;
         }
     }
 }
