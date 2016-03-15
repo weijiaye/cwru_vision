@@ -62,6 +62,10 @@ add_library(projective_lib
     src/projective_geometry.cpp
 )
 
+add_library(ellipse_modeling_lib
+    src/ellipse_modeling.cpp
+)
+
 
 add_library(grab_cut_lib
     src/grab_cut.cpp

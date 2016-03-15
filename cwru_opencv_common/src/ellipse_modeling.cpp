@@ -12,6 +12,8 @@
 
 #include "cwru_opencv_common/projective_geometry.h"
 
+#include "cwru_opencv_common/ellipse_modeling.h"
+
 using namespace cv;
 using namespace cv_local;
 
@@ -55,7 +57,7 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
         double dAdtheta(-B);
 
         matJac_.at< float > (0, 0) = static_cast<float> (dAda*dadw);  // dA/dWidth
-        matJac_.at< float > (0, 1) = static_cast<float> (dadb*dbdh);  // dA/dheight
+        matJac_.at< float > (0, 1) = static_cast<float> (dAdb*dbdh);  // dA/dheight
         matJac_.at< float > (0, 2) = static_cast<float> (-B*dthetadangle);  // dA/dangle
         matJac_.at< float > (0, 3) = 0.0;  // dA/dcx
         matJac_.at< float > (0, 4) = 0.0;  // dA/dcy
@@ -97,7 +99,7 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
 
         // derivative of F
         matJac_.at< float > (5, 0) = static_cast<float> (
-            (xc*xc*dAda+xc*yc*dBda2+yc*yc*dCda-2*a*b*b)*dadw);  // dF/dWidth
+            (xc*xc*dAda+xc*yc*dBda+yc*yc*dCda-2*a*b*b)*dadw);  // dF/dWidth
         matJac_.at< float > (5, 1) = static_cast<float> (
             (xc*xc*dAdb+xc*yc*dBdb+yc*yc*dCdb-2*a*a*b)*dbdh);  // dF/dheight
         matJac_.at< float > (5, 2) = static_cast<float> (
@@ -121,11 +123,11 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
 
     // use a test point inside the circle to ensure that the inside is negative:
     Mat testPt(3, 1, CV_32FC1);
-    testPt.at<float>(0) = static_cast<float> input.center.x;
-    testPt.at<float>(1) = static_cast<float> input.center.y;
+    testPt.at<float>(0) = static_cast<float> (input.center.x);
+    testPt.at<float>(1) = static_cast<float> (input.center.y);
     testPt.at<float>(2) = 1.0;
 
-    Mat result = testPt.t()*conicMat*testpt;
+    Mat result = testPt.t()*conicMat*testPt;
 
     if (result.at<float>(0) > 0)
     {
@@ -181,75 +183,78 @@ Mat findEllipseRotTransMat(RotatedRect ellipse, double radius, Mat intrinsics)
 }
 
 
-double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect, const cv::Mat &imageGrey ,cv::OutputArray ellipseEnergyDerivative)
+double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect, const cv::Mat &imageGrey ,cv::OutputArray ellipseEnergyDerivative)
 {
-    Mat imageMask(subImage.size(), CV_8UC1);	
-	Mat subImage_x, subImage_y;
-    
     // compute image gradiant
+    Mat subImage = imageGrey(subRect);
+   
+
+    Mat subImage_x, subImage_y;
     Scharr(subImage, subImage_x, CV_32F, 1, 0);
     Scharr(subImage, subImage_y, CV_32F, 0, 1);
-	
+
     // The total energy of the ellipse is the Image brightness at  X,Y offset by the image cuttoff.
-    // mulitplied by the result of the nergy functional
+    // mulitplied by the result of the energy functional
     // splus the image gradient
-
-
-	int totalSize(subImage.rows*subimage.cols);
+    int totalSize(subImage.rows*subImage.cols);
 
     RotatedRect offsetEllipse(ellipseRect);
-    offsetEllipse.center -= Point2f(subImage.x,subImage.y);
+    offsetEllipse.center -= Point2f(subRect.x, subRect.y);
 
-	// the energy is computed.
-
-    imageMask = 0;
+    // the energy is computed.
 
     Mat thresh;
-    double I_c(threshold(subImage,thresh,127,255,THRESH_BINARY_INV+THRESH_OTSU));
+    double I_c(threshold(subImage, thresh, 127, 255, THRESH_BINARY_INV+THRESH_OTSU));
 
 
-    ellipse(imageMaskOutline, offsetEllipse, Scalar(1), 3); // line width is variable (5)
-	ellipse(imageMask, offsetEllipse, Scalar(1), -1); // filled in ellipse.
+    Mat imageMask(subImage.size(), CV_8UC1);
+    Mat imageMaskOutline(subImage.size(), CV_8UC1);
+    imageMask = 0;
+    imageMaskOutline = 0;
+    ellipse(imageMaskOutline, offsetEllipse, Scalar(1), 3);  // line width is variable (5)
+    ellipse(imageMask, offsetEllipse, Scalar(1), -1);  // filled in ellipse.
 
     Mat deriv;
 
     if (ellipseEnergyDerivative.needed())
     {
-        deriv.create(1, 9,CV_32FC1);
+        deriv.create(1, 6, CV_32FC1);
     }
-	
-	// compute the offset vector.
-	Size subSize;
-	Point imgOffset;
-	subImage.locateROI(subSize, imgOffset);
+
+    // compute the offset vector.
+    Size subSize;
+    Point imgOffset;
+    subImage.locateROI(subSize, imgOffset);
     Mat jacobian;
     Mat ellipseMat = ellipse2Mat(ellipseRect, jacobian);
-    Mat vect(3,1,CV_32FC1);
+    Mat vect(3, 1, CV_32FC1);
 
     float totalVal = 0.0;
-    for (int i = 0; i < subImage.totalSize; i++)
+    for (int i = 0; i < totalSize; i++)
     {
-        if (imageMask.at < usigned char > (i) > 0)
-        { 
-            int x = i % subImage.size.width+imgOffset.x;
-            int y = i / (subImage.size.height)+imgOffset.y;
+        if (imageMask.at < unsigned char > (i) > 0)
+        {
+            int x = i % subImage.size().width+imgOffset.x;
+            int y = i / (subImage.size().height)+imgOffset.y;
 
             vect.at<float> (0) = static_cast<float> (x);
             vect.at<float> (1) = static_cast<float> (y);
             vect.at<float> (2) = static_cast<float> (1.0);
 
+            Mat derivEllipse;
 
             float value =  computeContourValue(vect, ellipseMat, derivEllipse);
 
-            totalVal +=
+            float imagePixel =  static_cast<float> (imageMask.at < unsigned char > (i)) - I_c;
+            totalVal += value*imagePixel;
+
             if (ellipseEnergyDerivative.needed())
             {
-                deriv += 
+                deriv += derivEllipse*imagePixel;
             }
-
         }
-		if (imageMaskContour.at < usigned char > (i) > 0)
-        { 
+        if (imageMaskContour.at < unsigned char > (i) > 0)
+        {
             int x = i % subImage.size.width+imgOffset.x;
             int y = i / (subImage.size.height)+imgOffset.y;
 
@@ -257,8 +262,27 @@ double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect, const
             vect.at<float> (1) = static_cast<float> (y);
             vect.at<float> (2) = static_cast<float> (1.0);
 
+            Mat imageGrad(1, 3, CV_32FC1);
 
-            float value =  compute(vect, ellipseMat, derivEllipse);
+            imageGrad.at<float>(0) = subImage_x.at< float > (i);
+            imageGrad.at<float>(1) = subImage_y.at< float > (i);
+            imageGrad.at<float>(2) = 0.0f;
+
+            Mat vect = imageGrad.t()*ellipseMat*vect*2;
+
+            Mat localDeriv(1,6,CV_32FC1);
+
+            localDeriv.at< float >(0)  = static_cast< float > ( vect.at < float > (0)*imageGrad.at < float > (0));  // dvdA
+            localDeriv.at< float >(1)  = static_cast< float > ( vect.at < float > (1)*imageGrad.at < float> (0)*0.5
+                + vect.at < float > (0)*imageGrad.at < float> (1)*0.5);  // dvdB
+            localDeriv.at< float >(2)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (1));  // dvDC 
+            localDeriv.at< float >(3)  = static_cast< float > ( imageGrad.at < float> (0) * 0.5 );                      // dvDD
+            localDeriv.at< float >(4)  = static_cast< float > ( imageGrad.at < float> (1) *0.5 );                      // dvdE
+            localDeriv.at< float >(5)  = static_cast< float > ( 0.0 );                             // dvdF
+
+            float value = vect.at<float> (0);
+
+            deriv += localDeriv*2.0;
         }
     }
 }
@@ -294,11 +318,11 @@ float getResultsDerivative(const Mat& vect,const Mat & ellipseMat, cv::OutputArr
         Mat derivativeEllipse_ =  derivativeEllipse.getMat();
 
         derivativeEllipse_.at< float >(0)  = static_cast< float > ( vect.at < float> (0)*vect.at < float> (0));  // dvdA
-        derivativeEllipse_.at< float >(1)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (0));    // dvdB
-        derivativeEllipse_.at< float >(2)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (1));
+        derivativeEllipse_.at< float >(1)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (0));  // dvdB
+        derivativeEllipse_.at< float >(2)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (1));  // dvDC 
         derivativeEllipse_.at< float >(3)  = static_cast< float > ( vect.at < float> (0) );
         derivativeEllipse_.at< float >(4)  = static_cast< float > ( vect.at < float> (1) );
-        derivativeEllipse_.at< float >(4)  = static_cast< float > ( 1.0 );
+        derivativeEllipse_.at< float >(5)  = static_cast< float > ( 1.0 );
     }
 
 	// compute value;
