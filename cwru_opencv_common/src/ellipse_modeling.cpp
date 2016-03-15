@@ -20,10 +20,9 @@ namespace cv_ellipse
 
 Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
 {
-
     Mat conicMat(3, 3, CV_32FC1);
 
-    //generate the first stage of parameters.
+    // generate the first stage of parameters.
     const double dadw(0.5);
     const double dbdh(0.5);
     const double dthetadangle(3.14159265359/180.0);
@@ -36,7 +35,7 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
     double stheta = sin(theta);
     double ctheta = cos(theta);
 
-    //compute the Polynomial coefficients.
+    // compute the Polynomial coefficients.
     double A = a*a*stheta*stheta+b*b*ctheta*ctheta;
     double B = 2*(b*b-a*a)*stheta*ctheta;
     double C = a*a*ctheta*ctheta+b*b*stheta*stheta;
@@ -46,9 +45,7 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
 
     if ( matJac.needed() )
     {
-        
-
-        matJac.create(6,5,CV_32FC1);
+        matJac.create(6, 5, CV_32FC1);
 
         Mat matJac_ =  matJac.getMat();
 
@@ -184,29 +181,42 @@ Mat findEllipseRotTransMat(RotatedRect ellipse, double radius, Mat intrinsics)
 }
 
 
-double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect, cv::OutputArray ellipseDerivative)
+double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect, const cv::Mat &imageGrey ,cv::OutputArray ellipseEnergyDerivative)
 {
-    Mat imageMask(subImage.size(), CV_8UC1);
-	
+    Mat imageMask(subImage.size(), CV_8UC1);	
 	Mat subImage_x, subImage_y;
+    
+    // compute image gradiant
     Scharr(subImage, subImage_x, CV_32F, 1, 0);
     Scharr(subImage, subImage_y, CV_32F, 0, 1);
-	// compute image gradiant
+	
+    // The total energy of the ellipse is the Image brightness at  X,Y offset by the image cuttoff.
+    // mulitplied by the result of the nergy functional
+    // splus the image gradient
 
-	
-	
+
 	int totalSize(subImage.rows*subimage.cols);
 
     RotatedRect offsetEllipse(ellipseRect);
-    
+    offsetEllipse.center -= Point2f(subImage.x,subImage.y);
+
 	// the energy is computed.
 
     imageMask = 0;
-    ellipse(imageMaskOutline, ellipseRect, Scalar(1), 3); //line width is variable (5)
-	ellipse(imageMask, ellipseRect, Scalar(1), -1); //filled in ellipse.
-  
-    Mat deriv(1, 6,CV_32FC1);
 
+    Mat thresh;
+    double I_c(threshold(subImage,thresh,127,255,THRESH_BINARY_INV+THRESH_OTSU));
+
+
+    ellipse(imageMaskOutline, offsetEllipse, Scalar(1), 3); // line width is variable (5)
+	ellipse(imageMask, offsetEllipse, Scalar(1), -1); // filled in ellipse.
+
+    Mat deriv;
+
+    if (ellipseEnergyDerivative.needed())
+    {
+        deriv.create(1, 9,CV_32FC1);
+    }
 	
 	// compute the offset vector.
 	Size subSize;
@@ -230,6 +240,13 @@ double computeEllipseEnergy(Rect subImage, const RotatedRect& ellipseRect, cv::O
 
 
             float value =  computeContourValue(vect, ellipseMat, derivEllipse);
+
+            totalVal +=
+            if (ellipseEnergyDerivative.needed())
+            {
+                deriv += 
+            }
+
         }
 		if (imageMaskContour.at < usigned char > (i) > 0)
         { 
