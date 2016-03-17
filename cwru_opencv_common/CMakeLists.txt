@@ -136,7 +136,7 @@ target_link_libraries(projective_lib
 
 
 
-#ADD_EXECUTABLE(vesselness_image_filter_cpu_node src/cpu_src/vesselness_image_filter_cpu_node.cpp)
+ADD_EXECUTABLE(ellipse_iteration_test test/test_ellipse.cpp)
 
 #ADD_EXECUTABLE(catheter_playback_node src/catheter_playback_node.cpp)
 
@@ -145,11 +145,10 @@ target_link_libraries(projective_lib
 #ADD_EXECUTABLE(vesselness_image_filter_cpu src/cpu_src/vesselness_image_filter_gpu.cpp)
 #ADD_DEPENDENCIES(beginner_tutorials_node T)
 
-#TARGET_LINK_LIBRARIES(
-#   #vesselness_image_filter
-#   ${catkin_LIBRARIES}
-#  #${PCL_LIBRARIES}
-#)
+TARGET_LINK_LIBRARIES(ellipse_iteration_test
+    ellipse_modeling_lib
+    ${catkin_LIBRARIES}
+)
 
 #target_link_libraries(catheter_import_lib
 #    #opencv_imgcodecs

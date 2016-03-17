@@ -73,5 +73,12 @@ cv::Mat ellipse2Mat(cv::RotatedRect, cv::OutputArray = cv::noArray());
 cv::Mat findEllipseRotTransMat(cv::RotatedRect, double, cv::Mat);
 
 
+float getResultsDerivative(const cv::Mat& vect,const cv::Mat & ellipseMat, cv::OutputArray = cv::noArray());
+
+double computeEllipseEnergy(const cv::Rect &, const cv::RotatedRect&, const cv::Mat &,cv::OutputArray = cv::noArray());
+
 };  // namespace cv_ellipse
 
+
+
+#endif

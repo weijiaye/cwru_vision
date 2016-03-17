@@ -95,7 +95,7 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
         matJac_.at< float > (4, 1) = static_cast<float> ((-xc*dBdb-2*yc*dCdb)*dbdh);  // dE/dheight
         matJac_.at< float > (4, 2) = static_cast<float> ((-xc*dBdtheta-2*yc*dCdtheta)*dthetadangle);  // dE/dangle
         matJac_.at< float > (4, 3) = static_cast<float> (-B);  // dE/dcx
-        matJac_.at< float > (4, 4) = static_cast<float> (-2C);  // dE/dcy
+        matJac_.at< float > (4, 4) = static_cast<float> (-2*C);  // dE/dcy
 
         // derivative of F
         matJac_.at< float > (5, 0) = static_cast<float> (
@@ -183,21 +183,30 @@ Mat findEllipseRotTransMat(RotatedRect ellipse, double radius, Mat intrinsics)
 }
 
 
-double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect, const cv::Mat &imageGrey ,cv::OutputArray ellipseEnergyDerivative)
+double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect, const cv::Mat &imageGrey, cv::OutputArray ellipseEnergyDerivative)
 {
     // compute image gradiant
+   
     Mat subImage = imageGrey(subRect);
    
+   
+    
 
     Mat subImage_x, subImage_y;
     Scharr(subImage, subImage_x, CV_32F, 1, 0);
     Scharr(subImage, subImage_y, CV_32F, 0, 1);
+
+
+    
 
     // The total energy of the ellipse is the Image brightness at  X,Y offset by the image cuttoff.
     // mulitplied by the result of the energy functional
     // splus the image gradient
     int totalSize(subImage.rows*subImage.cols);
 
+
+
+    
     RotatedRect offsetEllipse(ellipseRect);
     offsetEllipse.center -= Point2f(subRect.x, subRect.y);
 
@@ -211,15 +220,20 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
     Mat imageMaskOutline(subImage.size(), CV_8UC1);
     imageMask = 0;
     imageMaskOutline = 0;
+  
+    printf("Made it to here:\n");
+
     ellipse(imageMaskOutline, offsetEllipse, Scalar(1), 3);  // line width is variable (5)
     ellipse(imageMask, offsetEllipse, Scalar(1), -1);  // filled in ellipse.
 
     Mat deriv;
 
-    if (ellipseEnergyDerivative.needed())
-    {
-        deriv.create(1, 6, CV_32FC1);
-    }
+    // if (ellipseEnergyDerivative.needed())
+    // {
+    //    deriv.create(1, 6, CV_32FC1);
+    // }
+
+
 
     // compute the offset vector.
     Size subSize;
@@ -229,11 +243,13 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
     Mat ellipseMat = ellipse2Mat(ellipseRect, jacobian);
     Mat vect(3, 1, CV_32FC1);
 
+    printf("Made it to here: %d \n",totalSize);
     float totalVal = 0.0;
     for (int i = 0; i < totalSize; i++)
     {
         if (imageMask.at < unsigned char > (i) > 0)
         {
+            printf("Made it to here: %d \n", i);
             int x = i % subImage.size().width+imgOffset.x;
             int y = i / (subImage.size().height)+imgOffset.y;
 
@@ -243,20 +259,21 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
 
             Mat derivEllipse;
 
-            float value =  computeContourValue(vect, ellipseMat, derivEllipse);
+            float value =  getResultsDerivative(vect, ellipseMat, derivEllipse);
 
             float imagePixel =  static_cast<float> (imageMask.at < unsigned char > (i)) - I_c;
             totalVal += value*imagePixel;
 
-            if (ellipseEnergyDerivative.needed())
-            {
-                deriv += derivEllipse*imagePixel;
-            }
+            // if (ellipseEnergyDerivative.needed())
+            // {
+            //    deriv += derivEllipse*imagePixel;
+            // }
         }
-        if (imageMaskContour.at < unsigned char > (i) > 0)
+        if (imageMaskOutline.at < unsigned char > (i) > 0)
         {
-            int x = i % subImage.size.width+imgOffset.x;
-            int y = i / (subImage.size.height)+imgOffset.y;
+            printf("Made it to here Outline: %d \n", i);
+            int x = i % subImage.size().width+imgOffset.x;
+            int y = i / (subImage.size().height)+imgOffset.y;
 
             vect.at<float> (0) = static_cast<float> (x);
             vect.at<float> (1) = static_cast<float> (y);
@@ -281,10 +298,17 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
             localDeriv.at< float >(5)  = static_cast< float > ( 0.0 );                             // dvdF
 
             float value = vect.at<float> (0);
+            totalVal += value;
 
-            deriv += localDeriv*2.0;
+            // if (ellipseEnergyDerivative.needed())
+            // {
+            //      deriv += localDeriv*2.0;
+            // }
+           
         }
     }
+    printf("Made it to here:\n");
+    return totalVal;
 }
 
 
