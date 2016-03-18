@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 {
   
   cv::Size imageSize(100,100);
-  cv::Size ellipseSize(45,25);
+  cv::Size ellipseSize(55,15);
   double ellipseAngle(145);
   cv::Point2d ellipseCenter(50,50);
   cv::RotatedRect testEllipse(ellipseCenter, ellipseSize, ellipseAngle);
@@ -101,7 +101,15 @@ int main(int argc, char** argv)
 
   image += minVal;
   image *= (1/(maxVal-minVal));
-  
+ 
+
+  vect.at<float> (0) = static_cast<float> (50);
+  vect.at<float> (1) = static_cast<float> (50);
+  vect.at<float> (2) = static_cast<float> (1.0);
+
+  double centerE(cv_ellipse::getResultsDerivative(vect,ellipseMat));
+  ROS_INFO("center E: %f",centerE);
+
   ROS_INFO_STREAM(ellipseMat);
   ROS_INFO("minVal: %f",minVal);
   ROS_INFO("maxVal: %f",maxVal);
@@ -115,6 +123,12 @@ int main(int argc, char** argv)
   cv::imshow("ellipse",image);
   
   cv::waitKey(0);
+
+  cv::ellipse(image, testEllipse, cv::Scalar(1.0), 1);
+  cv::imshow("ellipse",image);
+  
+  cv::waitKey(0);
+  
 
   ROS_INFO("Quiting the vesselness GPU node\n");
   return 0;

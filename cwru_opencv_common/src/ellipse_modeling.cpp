@@ -249,7 +249,7 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
     {
         if (imageMask.at < unsigned char > (i) > 0)
         {
-            printf("Made it to here: %d \n", i);
+
             int x = i % subImage.size().width+imgOffset.x;
             int y = i / (subImage.size().height)+imgOffset.y;
 
@@ -259,8 +259,9 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
 
             Mat derivEllipse;
 
+            printf("Made it to here: %d \n", i);
             float value =  getResultsDerivative(vect, ellipseMat, derivEllipse);
-
+            printf("Made it to here: %d \n", i);
             float imagePixel =  static_cast<float> (imageMask.at < unsigned char > (i)) - I_c;
             totalVal += value*imagePixel;
 
@@ -271,7 +272,7 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
         }
         if (imageMaskOutline.at < unsigned char > (i) > 0)
         {
-            printf("Made it to here Outline: %d \n", i);
+            printf("Made it to here Outline 1: %d \n", i);
             int x = i % subImage.size().width+imgOffset.x;
             int y = i / (subImage.size().height)+imgOffset.y;
 
@@ -285,10 +286,12 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
             imageGrad.at<float>(1) = subImage_y.at< float > (i);
             imageGrad.at<float>(2) = 0.0f;
 
-            Mat vect = imageGrad.t()*ellipseMat*vect*2;
+            printf("Made it to here Outline 2: %d \n", i);
+            Mat result = imageGrad*ellipseMat*vect*2;
 
             Mat localDeriv(1,6,CV_32FC1);
 
+            printf("Made it to here Outline 3: %d \n", i);
             localDeriv.at< float >(0)  = static_cast< float > ( vect.at < float > (0)*imageGrad.at < float > (0));  // dvdA
             localDeriv.at< float >(1)  = static_cast< float > ( vect.at < float > (1)*imageGrad.at < float> (0)*0.5
                 + vect.at < float > (0)*imageGrad.at < float> (1)*0.5);  // dvdB
@@ -297,7 +300,7 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
             localDeriv.at< float >(4)  = static_cast< float > ( imageGrad.at < float> (1) *0.5 );                      // dvdE
             localDeriv.at< float >(5)  = static_cast< float > ( 0.0 );                             // dvdF
 
-            float value = vect.at<float> (0);
+            float value = result.at<float> (0);
             totalVal += value;
 
             // if (ellipseEnergyDerivative.needed())
