@@ -50,7 +50,7 @@ int main(int argc, char** argv)
   
   cv::Size imageSize(100,100);
   cv::Size ellipseSize(55,15);
-  double ellipseAngle(145);
+  double ellipseAngle(155);
   cv::Point2d ellipseCenter(50,50);
   cv::RotatedRect testEllipse(ellipseCenter, ellipseSize, ellipseAngle);
   

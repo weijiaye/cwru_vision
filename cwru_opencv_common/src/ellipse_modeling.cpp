@@ -32,7 +32,7 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
     double b = input.size.height/2;
     double xc = input.center.x;
     double yc = input.center.y;
-    double theta = (double) input.angle*3.14159265359/180;
+    double theta = (double) (90 - input.angle)*3.14159265359/180;
 
     double stheta = sin(theta);
     double ctheta = cos(theta);
@@ -129,13 +129,16 @@ Mat ellipse2Mat(RotatedRect input, cv::OutputArray matJac)
 
     Mat result = testPt.t()*conicMat*testPt;
 
+    double scaleFactor = abs(1/result.at<float>(0));
+
+    conicMat *= scaleFactor;
     if (result.at<float>(0) > 0)
     {
         conicMat *= -1.0;
         if ( matJac.needed() )
         {
             Mat matJac_ =  matJac.getMat();
-            matJac_ *= -1.0;
+            matJac_ *= -1.0*scaleFactor;
         }
     }
     return conicMat;
@@ -223,7 +226,7 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
   
     printf("Made it to here:\n");
 
-    ellipse(imageMaskOutline, offsetEllipse, Scalar(1), 3);  // line width is variable (5)
+    ellipse(imageMaskOutline, offsetEllipse, Scalar(1), 1);  // line width is variable (5)
     ellipse(imageMask, offsetEllipse, Scalar(1), -1);  // filled in ellipse.
 
     Mat deriv;
@@ -259,11 +262,10 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
 
             Mat derivEllipse;
 
-            printf("Made it to here: %d \n", i);
+           
             float value =  getResultsDerivative(vect, ellipseMat, derivEllipse);
-            printf("Made it to here: %d \n", i);
             float imagePixel =  static_cast<float> (imageMask.at < unsigned char > (i)) - I_c;
-            totalVal += value*imagePixel;
+            // totalVal += value*imagePixel;
 
             // if (ellipseEnergyDerivative.needed())
             // {
@@ -272,7 +274,7 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
         }
         if (imageMaskOutline.at < unsigned char > (i) > 0)
         {
-            printf("Made it to here Outline 1: %d \n", i);
+           
             int x = i % subImage.size().width+imgOffset.x;
             int y = i / (subImage.size().height)+imgOffset.y;
 
@@ -280,18 +282,22 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
             vect.at<float> (1) = static_cast<float> (y);
             vect.at<float> (2) = static_cast<float> (1.0);
 
-            Mat imageGrad(1, 3, CV_32FC1);
+            Mat imageGrad(3, 1, CV_32FC1);
 
             imageGrad.at<float>(0) = subImage_x.at< float > (i);
             imageGrad.at<float>(1) = subImage_y.at< float > (i);
             imageGrad.at<float>(2) = 0.0f;
 
-            printf("Made it to here Outline 2: %d \n", i);
-            Mat result = imageGrad*ellipseMat*vect*2;
+            
+            Mat inter = ellipseMat*vect*2;
+            Mat result = imageGrad.cross(inter);
+            std::cout << imageGrad << std::endl;
+            std::cout << inter << std::endl;
+            float value(norm(result));
+
 
             Mat localDeriv(1,6,CV_32FC1);
 
-            printf("Made it to here Outline 3: %d \n", i);
             localDeriv.at< float >(0)  = static_cast< float > ( vect.at < float > (0)*imageGrad.at < float > (0));  // dvdA
             localDeriv.at< float >(1)  = static_cast< float > ( vect.at < float > (1)*imageGrad.at < float> (0)*0.5
                 + vect.at < float > (0)*imageGrad.at < float> (1)*0.5);  // dvdB
@@ -300,7 +306,8 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
             localDeriv.at< float >(4)  = static_cast< float > ( imageGrad.at < float> (1) *0.5 );                      // dvdE
             localDeriv.at< float >(5)  = static_cast< float > ( 0.0 );                             // dvdF
 
-            float value = result.at<float> (0);
+
+            printf("The result was %f\n",value);
             totalVal += value;
 
             // if (ellipseEnergyDerivative.needed())
