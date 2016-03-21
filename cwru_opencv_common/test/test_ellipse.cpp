@@ -49,8 +49,8 @@ int main(int argc, char** argv)
 {
   
   cv::Size imageSize(100,100);
-  cv::Size ellipseSize(55,15);
-  double ellipseAngle(155);
+  cv::Size ellipseSize(50,25);
+  double ellipseAngle(0);
   cv::Point2d ellipseCenter(50,50);
   cv::RotatedRect testEllipse(ellipseCenter, ellipseSize, ellipseAngle);
   
@@ -67,6 +67,12 @@ int main(int argc, char** argv)
 
   cv::ellipse(image8U1, testEllipse, cv::Scalar(255), 1);
   cv::ellipse(imageInv, testEllipse, cv::Scalar(0), -1);
+
+    cv::Point2f vertices[4];
+    testEllipse.points(vertices);
+    for (int i = 0; i < 4; i++)
+    cv::line(image8U1, vertices[i], vertices[(i+1)%4], cv::Scalar(255));
+
   cv::Mat vect(3, 1, CV_32FC1);
   float minVal(0);
   float maxVal(0);
@@ -74,8 +80,8 @@ int main(int argc, char** argv)
   {
   	for (int j(0); j < imageSize.width; j++)
   	{
-  		vect.at<float> (0) = static_cast<float> (i);
-        vect.at<float> (1) = static_cast<float> (j);
+  		vect.at<float> (0) = static_cast<float> (j);
+        vect.at<float> (1) = static_cast<float> (i);
         vect.at<float> (2) = static_cast<float> (1.0);
         float pixVal(cv_ellipse::getResultsDerivative(vect, ellipseMat));
 
@@ -129,7 +135,26 @@ int main(int argc, char** argv)
   
   cv::waitKey(0);
   
+  double angle(0.0);
+  
+  cv::Mat newImage = cv::Mat::zeros(imageSize,CV_8UC1);
+  
+  while(angle < 6.29)
+  {
+  	cv::Mat localMat1 = cv_ellipse::ellipsePointMat(testEllipse, angle);
+    cv::Mat localMat2 = cv_ellipse::ellipsePointMatR(testEllipse, angle);
+    cv::Point localPt = cv_ellipse::ellipsePointR(testEllipse, angle);
+  	cv::Mat val1 = localMat1.t()*ellipseMat*localMat1;
+  	cv::Mat val2 = localMat2.t()*ellipseMat*localMat2;
+  	// printf("The value at angle %f is %f (%f). \n",
+  	//	angle, val1.at<float>(0), val2.at<float>(0));
+  	printf("< %d, %d >", localPt.x, localPt.y);
+  	angle += 0.01;
+  	newImage.at< unsigned char >(localPt.y, localPt.x) = 255;
+  }
 
+  cv::imshow("ellipse",newImage);
+  cv::waitKey(0);
   ROS_INFO("Quiting the vesselness GPU node\n");
   return 0;
 }

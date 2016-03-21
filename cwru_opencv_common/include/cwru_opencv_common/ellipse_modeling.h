@@ -77,6 +77,14 @@ float getResultsDerivative(const cv::Mat& vect,const cv::Mat & ellipseMat, cv::O
 
 double computeEllipseEnergy(const cv::Rect &, const cv::RotatedRect&, const cv::Mat &,cv::OutputArray = cv::noArray());
 
+cv::Point2d ellipsePoint(const cv::RotatedRect & input, double angle);
+
+cv::Point ellipsePointR(const cv::RotatedRect & input, double angle);
+
+cv::Mat ellipsePointMat(const cv::RotatedRect & input, double angle);
+
+cv::Mat ellipsePointMatR(const cv::RotatedRect & input, double angle);
+
 };  // namespace cv_ellipse
 
 
