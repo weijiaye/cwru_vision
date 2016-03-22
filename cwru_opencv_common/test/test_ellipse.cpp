@@ -53,6 +53,9 @@ int main(int argc, char** argv)
   double ellipseAngle(0);
   cv::Point2d ellipseCenter(50,50);
   cv::RotatedRect testEllipse(ellipseCenter, ellipseSize, ellipseAngle);
+
+  cv::Size ellipseSize1(45,25);
+  cv::RotatedRect testEllipse1(ellipseCenter, ellipseSize1, ellipseAngle);
   
 
   cv::Mat image = cv::Mat::zeros(imageSize,CV_32FC1);
@@ -103,7 +106,12 @@ int main(int argc, char** argv)
   subRect -= cv::Point(5, 5);
   subRect += cv::Size(10, 10);
   ROS_INFO_STREAM(subRect);
-  double energy(cv_ellipse::computeEllipseEnergy(subRect, testEllipse, imageInv));
+  cv::Mat deriv;
+  double energy(cv_ellipse::computeEllipseEnergy(subRect, testEllipse, imageInv,deriv));
+  double energy1(cv_ellipse::computeEllipseEnergy(subRect, testEllipse1, imageInv,deriv));
+
+  std::cout << deriv << std::endl;
+
 
   image += minVal;
   image *= (1/(maxVal-minVal));
@@ -121,6 +129,7 @@ int main(int argc, char** argv)
   ROS_INFO("maxVal: %f",maxVal);
 
   ROS_INFO("energy: %f",energy);
+  ROS_INFO("bad energy: %f",energy1);
 
   cv::imshow("ellipse",image8U1);
   
@@ -146,9 +155,6 @@ int main(int argc, char** argv)
     cv::Point localPt = cv_ellipse::ellipsePointR(testEllipse, angle);
   	cv::Mat val1 = localMat1.t()*ellipseMat*localMat1;
   	cv::Mat val2 = localMat2.t()*ellipseMat*localMat2;
-  	// printf("The value at angle %f is %f (%f). \n",
-  	//	angle, val1.at<float>(0), val2.at<float>(0));
-  	printf("< %d, %d >", localPt.x, localPt.y);
   	angle += 0.01;
   	newImage.at< unsigned char >(localPt.y, localPt.x) = 255;
   }

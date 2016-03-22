@@ -263,17 +263,17 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
     imageMask = 0;
     imageMaskOutline = 0;
   
-    printf("Made it to here:\n");
-
+    
     ellipse(imageMaskOutline, offsetEllipse, Scalar(255), 1);  // line width is variable (5)
     ellipse(imageMask, offsetEllipse, Scalar(1), -1);  // filled in ellipse.
 
     Mat deriv;
 
-    // if (ellipseEnergyDerivative.needed())
-    // {
-    //    deriv.create(1, 6, CV_32FC1);
-    // }
+    if (ellipseEnergyDerivative.needed())
+    {
+        ellipseEnergyDerivative.create(1, 6, CV_32FC1);
+        deriv =  ellipseEnergyDerivative.getMat();
+    }
     cv::imshow("ellipse",imageMaskOutline);
     cv::waitKey(0);
 
@@ -286,9 +286,10 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
     Mat ellipseMat = ellipse2Mat(ellipseRect, jacobian);
     Mat vect(3, 1, CV_32FC1);
 
-    printf("Made it to here: %d \n",totalSize);
+
+
+    
     float totalVal = 0.0;
-    printf("<%d, %d><%d, %d>", imgOffset.x, imgOffset.y, subSize.width,subSize.height);
     for (int i = 0; i < totalSize; i++)
     {
         int x((i % subRect.width) + imgOffset.x);
@@ -308,10 +309,10 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
             float imagePixel =  static_cast<float> (imageMask.at < unsigned char > (i)) - I_c;
             totalVal += value*imagePixel;
 
-            // if (ellipseEnergyDerivative.needed())
-            // {
-            //    deriv += derivEllipse*imagePixel;
-            // }
+            if (ellipseEnergyDerivative.needed())
+            {
+                deriv += derivEllipse*imagePixel;
+            }
         }
         if (imageMaskOutline.at < unsigned char > (i) > 0)
         {
@@ -325,32 +326,30 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
             
             Mat inter = ellipseMat*vect*2;
             double value = imageGrad.dot(inter);
-            std::cout << imageGrad << std::endl;
-            std::cout << inter << std::endl;
             
-            Mat localDeriv(1,6,CV_32FC1);
+          
 
-            localDeriv.at< float >(0)  = static_cast< float > ( vect.at < float > (0)*imageGrad.at < float > (0));  // dvdA
-            localDeriv.at< float >(1)  = static_cast< float > ( vect.at < float > (1)*imageGrad.at < float> (0)*0.5
-                + vect.at < float > (0)*imageGrad.at < float> (1)*0.5);  // dvdB
-            localDeriv.at< float >(2)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (1));  // dvDC 
-            localDeriv.at< float >(3)  = static_cast< float > ( imageGrad.at < float> (0) * 0.5 );                      // dvDD
-            localDeriv.at< float >(4)  = static_cast< float > ( imageGrad.at < float> (1) *0.5 );                      // dvdE
-            localDeriv.at< float >(5)  = static_cast< float > ( 0.0 );                             // dvdF
-
-
-            printf("The result was %f\n",value);
+        
             totalVal += value;
 
             
-            // if (ellipseEnergyDerivative.needed())
-            // {
-            //      deriv += localDeriv*2.0;
-            // }
+            if (ellipseEnergyDerivative.needed())
+            {
+                Mat localDeriv(1,6,CV_32FC1);
+
+                localDeriv.at< float >(0)  = static_cast< float > ( vect.at < float > (0)*imageGrad.at < float > (0));  // dvdA
+                localDeriv.at< float >(1)  = static_cast< float > ( vect.at < float > (1)*imageGrad.at < float> (0)*0.5
+                    + vect.at < float > (0)*imageGrad.at < float> (1)*0.5);  // dvdB
+                localDeriv.at< float >(2)  = static_cast< float > ( vect.at < float> (1)*vect.at < float> (1));  // dvDC 
+                localDeriv.at< float >(3)  = static_cast< float > ( imageGrad.at < float> (0) * 0.5 );                      // dvDD
+                localDeriv.at< float >(4)  = static_cast< float > ( imageGrad.at < float> (1) *0.5 );                      // dvdE
+                localDeriv.at< float >(5)  = static_cast< float > ( 0.0 );                             // dvdF
+
+                deriv += localDeriv*2.0;
+            }
            
         }
     }
-    printf("Made it to here:\n");
     return totalVal;
 }
 
