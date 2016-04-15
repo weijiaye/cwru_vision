@@ -18,7 +18,7 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib projective_lib opencv_3d_lib opencv_2d_lib opencv_local_lib opencv_rot_lib color_model_lib
     CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
-    #   DEPENDS system_lib
+    DEPENDS OpenCV
 )
 
 SET(LIB_TYPE STATIC) 
