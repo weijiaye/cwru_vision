@@ -270,13 +270,13 @@ namespace cv_3d
             ((Mat)Mat::eye(3, 3, CV_64FC1)).copyTo(dEnd0.colRange(0, 3));
             ((Mat)Mat::eye(3, 3, CV_64FC1)).copyTo(dEnd1.colRange(0, 3));
 
-            //center point derivative
-            //derivative is a function of the cylinderical motion.
-            Mat jac_ends(4,5,CV_64FC1);
+            // center point derivative
+            // derivative is a function of the cylinderical motion.
+            Mat jac_ends(4, 5, CV_64FC1);
 
-            //combine the two derivatives.
-            ((Mat) (jac_0*dEnd0)).copyTo((Mat) jac_ends.rowRange(0,2));
-            ((Mat) (jac_1*dEnd1)).copyTo((Mat) jac_ends.rowRange(2,4));
+            // combine the two derivatives.
+            ((Mat) (jac_0*dEnd0)).copyTo((Mat) jac_ends.rowRange(0, 2));
+            ((Mat) (jac_1*dEnd1)).copyTo((Mat) jac_ends.rowRange(2, 4));
 
             jac.create(4, 5, CV_64FC1);
 
@@ -303,7 +303,7 @@ namespace cv_3d
 
         Rect sphereInBox_r = renderSphere(mask_r, sphereIn , P_r, center_r, jac_r);
 
-        // update the sphereIn sphere:
+        // reproject the center of the sphere.
         Point2d pt_l = cv_projective::reprojectPoint(sphereIn.center, P_l, Mat(), Mat(), jac_l);
         Point2d pt_r = cv_projective::reprojectPoint(sphereIn.center, P_r, Mat(), Mat(), jac_r);
 
@@ -323,41 +323,62 @@ namespace cv_3d
         sphereInBox_l -= Point(pointOff, pointOff);
         sphereInBox_l += Size(2*pointOff, 2*pointOff);
 
-        sphereInBox_r -= Point(pointOff,pointOff);
-        sphereInBox_r += Size(2*pointOff,2*pointOff);
+        sphereInBox_r -= Point(pointOff, pointOff);
+        sphereInBox_r += Size(2*pointOff, 2*pointOff);
 
+        // use a region of interest around the sphere
+        // for speed.
         ROI_l = mask_l(sphereInBox_l);
         ROI_r = mask_r(sphereInBox_r);
+        GaussianBlur(ROI_l, blurredMask_l, Size(pointOff*2-1, pointOff*2-1), k_var);
+        GaussianBlur(ROI_r, blurredMask_r, Size(pointOff*2-1, pointOff*2-1), k_var);
 
-        GaussianBlur(ROI_l,blurredMask_l,Size(pointOff*2-1,pointOff*2-1),k_var);
-        GaussianBlur(ROI_r,blurredMask_r,Size(pointOff*2-1,pointOff*2-1),k_var);
+
         Mat segmentedImageFloat_l = segmentedImageFloat(sphereInBox_l);
         Mat segmentedImageFloat_r = segmentedImageFloat(sphereInBox_r);
+
+        // The product of the sphere image and the segmented image is used to find a new mean.
         Mat weightedMask_l = blurredMask_l.mul(segmentedImageFloat_l);
         Mat weightedMask_r = blurredMask_r.mul(segmentedImageFloat_r);
 
+        // Use the moments to find the center of the matched
         Moments mom_l = moments(weightedMask_l);
         Moments mom_r = moments(weightedMask_r);
 
         Mat pointOffsets(4, 1, CV_64FC1);
-        pointOffsets.at<double>(0) = (mom_l.m10/mom_l.m00)+sphereInBox_l.x-pt_l.x;
-        pointOffsets.at<double>(1) = (mom_l.m01/mom_l.m00)+sphereInBox_l.y-pt_l.y;
+        Mat offsetList;
+        Point3d offsetPt;
+        // To avoid a singularity issue check the magnitude of mom_l.m00 and mom_r.m00...
+        if (mom_l.m00 > 10 & mom_r.m00 > 10 )
+        {
+            pointOffsets.at<double>(0) = (mom_l.m10/mom_l.m00)+sphereInBox_l.x-pt_l.x;
+            pointOffsets.at<double>(1) = (mom_l.m01/mom_l.m00)+sphereInBox_l.y-pt_l.y;
 
-        pointOffsets.at<double>(2) = (mom_r.m10/mom_r.m00)+sphereInBox_r.x-pt_r.x;
-        pointOffsets.at<double>(3) = (mom_r.m01/mom_r.m00)+sphereInBox_r.y-pt_r.y;
+            pointOffsets.at<double>(2) = (mom_r.m10/mom_r.m00)+sphereInBox_r.x-pt_r.x;
+            pointOffsets.at<double>(3) = (mom_r.m01/mom_r.m00)+sphereInBox_r.y-pt_r.y;
 
+            offsetList = jacFull.inv(DECOMP_SVD)*(pointOffsets*0.4);
 
-        Mat offsetList = jacFull.inv(DECOMP_SVD)*(pointOffsets*0.4);
+            offsetPt = Point3d(offsetList.at<double>(0), offsetList.at<double>(1), offsetList.at<double>(2));
 
-        Point3d offsetPt(offsetList.at<double>(0), offsetList.at<double>(1), offsetList.at<double>(2));
+            // update the sphereIn.
+            sphereIn.center += offsetPt;
+        }
+        else
+        {   // enforce no offset.
+            pointOffsets.at<double>(0) = 0.0;
+            pointOffsets.at<double>(1) = 0.0;
+
+            pointOffsets.at<double>(2) = 0.0;
+            pointOffsets.at<double>(3) = 0.0;
+        }
+
 
         // update the sphereIn.
         sphereIn.center += offsetPt;
 
-
         if (displayPause)
         {
-
             ROS_INFO("The 2d image offsets are:\n");
             ROS_INFO_STREAM(pointOffsets);
 
@@ -461,9 +482,6 @@ namespace cv_3d
         /*
          * @todo Fit the ellipse modeling to an external function
          */
-
-
-
         Mat binary_l;
 
         double thresh_l(0);
@@ -765,18 +783,16 @@ cv::Point2d computeSphericalFromNormal(cv::Point3d dir_vector)
 }
 
 
-    cylinder baseCylinder()
-    {
-        cylinder newCylinder;
-
-        newCylinder.center = Point3d(0.0,0.0,0.0);
-        newCylinder.theta = 0.0;
-        newCylinder.phi =0.0;
-        newCylinder.height = 0.0128; //(in meters)
-        newCylinder.radius = 0.0025;
-
-        return newCylinder; 
-    }
+cylinder baseCylinder()
+{
+    cylinder newCylinder;
+    newCylinder.center = Point3d(0.0, 0.0, 0.0);
+    newCylinder.theta = 0.0;
+    newCylinder.phi = 0.0;
+    newCylinder.height = 0.0128;  // (in meters)
+    newCylinder.radius = 0.0025;
+    return newCylinder;
+}
 
 
 

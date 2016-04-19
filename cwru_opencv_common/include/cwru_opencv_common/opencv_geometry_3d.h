@@ -76,13 +76,12 @@ struct cylinder
     /**
      * @brief compute the mirror normal from theta and phi with an option jacobian.
      */
-    cv::Point3d computeNormalFromSpherical(double , double , cv::OutputArray=cv::noArray());
+    cv::Point3d computeNormalFromSpherical(double , double , cv::OutputArray = cv::noArray());
 
     /**
      * @brief compute the theta and phi from the mirror normal
      */
     cv::Point2d computeSphericalFromNormal(cv::Point3d);
-
 };
 
 #endif
