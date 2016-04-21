@@ -348,6 +348,7 @@ namespace cv_3d
         Mat pointOffsets(4, 1, CV_64FC1);
         Mat offsetList;
         Point3d offsetPt;
+        bool valid(true);
         // To avoid a singularity issue check the magnitude of mom_l.m00 and mom_r.m00...
         if (mom_l.m00 > 10 & mom_r.m00 > 10 )
         {
@@ -371,6 +372,8 @@ namespace cv_3d
 
             pointOffsets.at<double>(2) = 0.0;
             pointOffsets.at<double>(3) = 0.0;
+            //no motion.
+            valid = false;
         }
 
 
@@ -405,8 +408,15 @@ namespace cv_3d
             destroyWindow("weighted_r");
         }
 
-     
-        return norm(offsetPt);
+        // use the return range to indicate that there is no 
+     	if(valid)
+     	{
+        	return norm(offsetPt);
+        }
+        else
+        {
+        	return -1.0;
+        }
     }
 
 
