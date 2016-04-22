@@ -110,6 +110,11 @@ namespace cv_3d
         Point drawCenter(center.x, center.y);
         int radius = static_cast<int>(radEst);
 
+        if (radEst < 0)
+        {
+        	ROS_ERROR("Trying to draw a negative radius circle");
+        }
+        ROS_INFO_STREAM( center );
         if (centerPt.needed())
         {
             centerPt.create(3, 1, CV_64FC1);
@@ -770,12 +775,12 @@ cv::Point3d computeNormalFromSpherical(double theta, double phi, OutputArray jac
         jac.create(3,2,CV_64FC1);
         Mat jac_ = jac.getMat();
         jac_.setTo(0);
-        jac_.at<double>(0,0) = -sin(phi)*sin(theta);
-        jac_.at<double>(0,1) = cos(phi)*cos(theta);
-        jac_.at<double>(1,0) = sin(phi)*cos(theta);
-        jac_.at<double>(1,1) = cos(phi)*sin(theta);
-        jac_.at<double>(2,0) = 0.0;
-        jac_.at<double>(2,1) = -sin(phi);
+        jac_.at<double>(0, 0) = -sin(phi)*sin(theta);
+        jac_.at<double>(0, 1) = cos(phi)*cos(theta);
+        jac_.at<double>(1, 0) = sin(phi)*cos(theta);
+        jac_.at<double>(1, 1) = cos(phi)*sin(theta);
+        jac_.at<double>(2, 0) = 0.0;
+        jac_.at<double>(2, 1) = -sin(phi);
     }
     return output;
 
@@ -785,10 +790,9 @@ cv::Point3d computeNormalFromSpherical(double theta, double phi, OutputArray jac
 cv::Point2d computeSphericalFromNormal(cv::Point3d dir_vector)
 { 
     Point2d cylinder_orient;
-
-    cylinder_orient.x = (atan2(dir_vector.y, dir_vector.x)); //newTheta
-    cylinder_orient.y = (acos(dir_vector.z)); //newPhi
-
+    double normal(norm(dir_vector));
+    cylinder_orient.x = (atan2(dir_vector.y/normal, dir_vector.x/normal)); //newTheta
+    cylinder_orient.y = (acos(dir_vector.z/normal)); //newPhi
     return cylinder_orient;
 }
 
@@ -806,4 +810,4 @@ cylinder baseCylinder()
 
 
 
-};
+};  // namespace 3_d
