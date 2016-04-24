@@ -39,6 +39,12 @@ struct stereoCorrespondence{
 		return i==0? left : right;
 	}
 	
+	stereoCorrespondence& operator = (const stereoCorrespondence & in_)
+	{
+		left = in_.left;
+		left = in_.right;
+	}
+
 };
 
 

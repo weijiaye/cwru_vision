@@ -39,6 +39,7 @@
 
 
 #include "cwru_opencv_common/projective_geometry.h"
+#include <string>
 
 using namespace cv;
 using namespace cv_local;
@@ -46,6 +47,44 @@ using namespace cv_local;
 namespace cv_projective
 {
 
+cameraProjectionMatrices::cameraProjectionMatrices(ros::NodeHandle& nh, const std::string &leftCameraTopic, const std::string &rightCameraTopic):
+    stereo(false),
+    P_l(3,4,CV_64FC1),
+    P_r(3,4,CV_64FC1)
+{
+    // initialize the subsrciber callbacks such that the left callback will update P_l and the right callback will update P_r.
+    subL = nh.subscribe<sensor_msgs::CameraInfo>(leftCameraTopic, 1, boost::bind(&cameraProjectionMatrices::projectionSubscriptionCb, this, _1, 0));
+    subR = nh.subscribe<sensor_msgs::CameraInfo>(rightCameraTopic, 1, boost::bind(&cameraProjectionMatrices::projectionSubscriptionCb, this, _1, 1));
+    
+}
+
+void cameraProjectionMatrices::projectionSubscriptionCb(const sensor_msgs::CameraInfoConstPtr &input, int lr) 
+{
+	Mat temp;
+	if(lr == 0)
+	{
+		temp = P_l;
+	}
+    else
+    {
+        temp = P_r;
+	}
+	
+	for (int index(0); index < 12; index++)
+	{
+        temp.at<double>(index) = input->P[index];
+	}
+}
+
+cv::Mat cameraProjectionMatrices::getLeftProjectionMatrix() const
+{
+	return P_l.clone();
+}
+
+cv::Mat cameraProjectionMatrices::getRightProjectionMatrix() const
+{
+	return P_r.clone();
+}
 
 cv::Point2d reprojectPoint(const cv::Point3d &point, const cv::Mat &P,const cv::Mat& rvec, const cv::Mat &tvec, cv::OutputArray jac)
 {
