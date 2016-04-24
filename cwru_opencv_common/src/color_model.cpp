@@ -320,37 +320,37 @@ cv::Mat ColorModelHSV::segmentImage(const Mat &inputImage){
         // Available: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
         cv::Vec3b  tempVec(inputImage.at<cv::Vec3b>(i));
 
-    // if (i == 0) ROS_INFO("Data 1)");
+        // if (i == 0) ROS_INFO("Data 1)");
 
 
-    tempMat(0) = hueMap(tempVec[0],colorMean(0));
-    tempMat(1) = static_cast<float> (tempVec[1]);
-    tempMat(2) = static_cast<float> (tempVec[2]);
+        tempMat(0) = hueMap(tempVec[0],colorMean(0));
+        tempMat(1) = static_cast<float> (tempVec[1]);
+        tempMat(2) = static_cast<float> (tempVec[2]);
 
-    cv::Matx<float, 3, 1> diff(tempMat-colorMean);
+        cv::Matx<float, 3, 1> diff(tempMat-colorMean);
 
-    // if (i == 0) ROS_INFO("Data 1)");
-
-
-    cv::Matx<float, 1, 1> exponMatx(diff.t()*inverse*diff*-0.5);
+        // if (i == 0) ROS_INFO("Data 1)");
 
 
-    // if (i == 0) ROS_INFO("Data 1)");
+        cv::Matx<float, 1, 1> exponMatx(diff.t()*inverse*diff*-0.5);
 
-    float pixelVal(frac*exp(exponMatx(0)));
 
-    // if (i == 0) ROS_INFO("Data 1)");
+        // if (i == 0) ROS_INFO("Data 1)");
 
-    result.at<float>(i) = pixelVal;
+        float pixelVal(frac*exp(exponMatx(0)));
 
-    // if (i == 0) ROS_INFO("Data 1)");
+        // if (i == 0) ROS_INFO("Data 1)");
 
-    if (pixelVal > maxResult)
-    {
-        maxResult = pixelVal;
+        result.at<float>(i) = pixelVal;
+
+        // if (i == 0) ROS_INFO("Data 1)");
+
+        if (pixelVal > maxResult)
+        {
+            maxResult = pixelVal;
+        }
+
     }
-
- }
  //normalize result
  result = result*(1/maxResult);
  return result;
