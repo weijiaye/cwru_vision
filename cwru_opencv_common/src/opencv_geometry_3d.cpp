@@ -114,7 +114,6 @@ namespace cv_3d
         {
         	ROS_ERROR("Trying to draw a negative radius circle");
         }
-        ROS_INFO_STREAM( center );
         if (centerPt.needed())
         {
             centerPt.create(3, 1, CV_64FC1);
