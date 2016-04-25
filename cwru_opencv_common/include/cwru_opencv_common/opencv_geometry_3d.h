@@ -66,8 +66,8 @@ struct cylinder
     void iterateSphere_3d(const cv::Mat & , sphere & , const cv::Mat& , const cv::Mat&);
 
 
-    cv::Rect renderSphere(cv::Mat &,const sphere& , const cv::Mat &, cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray()  );
-    cv::RotatedRect renderCylinder(cv::Mat &,const cylinder&, const cv::Mat &,cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray());
+    cv::Rect renderSphere(cv::Mat &,const sphere& , const cv::Mat &, cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray(), const cv::Scalar& = cv::Scalar(255, 255, 255)  );
+    cv::RotatedRect renderCylinder(cv::Mat &,const cylinder&, const cv::Mat &,cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray(), const cv::Scalar& = cv::Scalar(255, 255, 255));
 
     double optimizeSphere(sphere &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false  );
 

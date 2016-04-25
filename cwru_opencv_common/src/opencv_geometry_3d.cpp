@@ -65,7 +65,7 @@ namespace cv_3d
 
 
 
-    Rect renderSphere(Mat &inputImage, const sphere &sphereIn, const Mat &P, OutputArray centerPt,  OutputArray jac)
+    Rect renderSphere(Mat &inputImage, const sphere &sphereIn, const Mat &P, OutputArray centerPt,  OutputArray jac, const Scalar& color)
     {
         // project the center;
         Point2d center(0.0, 0.0);
@@ -125,7 +125,7 @@ namespace cv_3d
         }
 
         // default is a filled white circle.
-        circle(inputImage, drawCenter, radius, Scalar(255, 255, 255), -1);
+        circle(inputImage, drawCenter, radius, color, -1);
 
         // output bounding box (used for more efficient code execution (optional);
         Rect boundingBox;
@@ -136,7 +136,7 @@ namespace cv_3d
         return boundingBox;
     }
 
-    RotatedRect renderCylinder(cv::Mat & inputImage, const cylinder & cylinderIn, const cv::Mat &P, OutputArray tips, OutputArray jac  )
+    RotatedRect renderCylinder(cv::Mat & inputImage, const cylinder & cylinderIn, const cv::Mat &P, OutputArray tips, OutputArray jac, const Scalar& color )
     {
         Mat jac_dir;
 
@@ -254,7 +254,7 @@ namespace cv_3d
             cornersV[3] = corners[3] = Point(c3.x, c3.y);
 
             //Draw the 4 points in the image.
-            fillConvexPoly(inputImage, corners, 4, Scalar(255, 255, 255), CV_AA);
+            fillConvexPoly(inputImage, corners, 4, color, CV_AA);
 
         }
 
