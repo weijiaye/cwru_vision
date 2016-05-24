@@ -50,11 +50,40 @@
 #include <opencv2/opencv.hpp>
 
 #include "cwru_opencv_common/opencv_local.h"
-
+#include <sensor_msgs/CameraInfo.h>
+#include <string>
 
 
 namespace cv_projective
 {
+
+
+class cameraProjectionMatrices
+{
+public:
+
+
+    cameraProjectionMatrices(ros::NodeHandle&, const std::string& , const std::string& );
+
+    cv::Mat getLeftProjectionMatrix() const;
+    cv::Mat getRightProjectionMatrix() const;
+
+private:
+
+    void projectionSubscriptionCb(const sensor_msgs::CameraInfoConstPtr &, int );
+    // left and right projective matrices
+    bool stereo;
+    cv::Mat P_l;
+    cv::Mat P_r;
+
+    // left and right subscribers
+    ros::Subscriber subL;
+    ros::Subscriber subR;
+
+
+};
+
+
 
 /** 
  * @brief Projects a point in 3d coords to a point in a camera image.

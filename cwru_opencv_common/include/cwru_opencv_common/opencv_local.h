@@ -52,23 +52,27 @@ namespace cv_local
 
 /* Stereo Storage structs */
 
-//  Storage struct for  stereo camera points
-struct stereoCorrespondence
-{
-    cv::Point2f left;
-    cv::Point2f right;
+//Storage struct for  stereo camera points
+struct stereoCorrespondence{
+	cv::Point2f left;
+	cv::Point2f right;
 
-    cv::Point2f& operator[](int i)
-    {
-        assert(i == 0 || i == 1);
-        return i == 0? left : right;
-    }
+	cv::Point2f& operator[](int i) {
+		assert(i==0 || i==1);
+		return i==0? left : right;
+	}
+	
+	const cv::Point2f& operator[](int i) const {
+		assert(i==0 || i==1);
+		return i==0? left : right;
+	}
+	
+	stereoCorrespondence& operator = (const stereoCorrespondence & in_)
+	{
+		left = in_.left;
+		left = in_.right;
+	}
 
-    const cv::Point2f& operator[](int i) const
-    {
-        assert(i == 0 || i == 1);
-        return i == 0 ? left : right;
-    }
 };
 
 
