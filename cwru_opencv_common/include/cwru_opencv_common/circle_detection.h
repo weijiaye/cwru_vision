@@ -41,7 +41,12 @@
 // Opencv Includes
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
-// #include "Third_Party\opencv.h"
+
+
+/*
+ * This function generates an ellipse based on an initial seed point.
+ */
+cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt);
 
 namespace cv_circle
 {
@@ -70,10 +75,7 @@ namespace cv_circle
 //  void exportEllipseFile(const char*,std::vector<RotatedRect> &);
 
 
-/*
- * This function generates an ellipse based on an initial seed point.
- */
-cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt);
+
 
 
 /*

@@ -39,8 +39,6 @@ using cv::cvtColor;
 
 using cv::Range;
 
-namespace cv_circle
-{
 
 cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt)
 {
@@ -99,6 +97,12 @@ cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt)
     return outputRect;
 
 }
+
+
+namespace cv_circle
+{
+
+
 
 
 void ellipseError(const RotatedRect & originalEllipse, const RotatedRect & newEllipse, Point2d& offset , double& angle)
