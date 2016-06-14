@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cwru_opencv_common)
 find_package(OpenCV REQUIRED)
 
-
+find_package(rostest REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
@@ -84,6 +84,15 @@ add_library(grab_cut_lib
 add_library(color_model_lib
     src/color_model.cpp
 )
+
+add_library(manual_labeling_server src/manual_labeling.cpp)
+
+target_link_libraries(manual_labeling_server
+        opencv_ui_lib
+        ${OpenCV_LIBRARIES}
+        ${catkin_LIBRARIES})
+
+add_dependencies(manual_labeling_server cwru_msgs)
 
 
 target_link_libraries(opencv_3d_lib
@@ -196,3 +205,14 @@ target_link_libraries(block_detection_lib
 #target_link_libraries(vesselness_image_filter_viewer_node
 #   ${catkin_LIBRARIES}
 # )
+
+# Add gtests
+catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
+target_link_libraries(gtest_manual_labeling
+        manual_labeling_server
+        ${OpenCV_LIBRERIES}
+        ${catkin_LIBRARIES})
+
+# Add rostests
+add_rostest_gtest(rostest_manual_labeling test/rostest_manual_labeling.test test/rostest_manual_labeling.cpp)
+target_link_libraries(rostest_manual_labeling manual_labeling_server ${catkin_LIBRARIES})
