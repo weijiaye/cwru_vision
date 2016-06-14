@@ -137,6 +137,12 @@ void deprojectStereoPoints(const std::vector < cv_local::stereoCorrespondence > 
  */
 void transformJacobian(const cv::Mat &rvect ,const cv::Mat & tvect, cv::Mat & trans , cv::OutputArray trans_jac=cv::noArray());
 
+/**
+ * @brief compute the rvec and the tvec, given the transform matrix G.
+ * 
+ */
+void computeRvecTvec(const cv::Mat & trans, cv::Mat & rvect, cv::Mat & tvect, cv::OutputArray trans_jac=cv::noArray());
+
 
 /**
  * @brief transforms points from 1 frame to another using rvec and tvec.
