@@ -35,37 +35,67 @@
  *
  */
 
-
- //  This file contains functions which are  meant to handle numerical ellipse optimization.
-
-
-namespace cv_ellipse_num
-{
-
-/*
- * @brief ellipseEnergy computes the energy functional of the alignment between the rotated rect & the ellipse.
- * 
- * @param cv::Mat &: The input image (assumed to be a single channel image)
- * @param cv::Mat &: The 3x4 camera projection matrix.
- * @param cv::Mat &: The transform matrix between the circle frame and the
- * @param cv::Point3d &:  The circle center in (R^3) (The normal is implicitly [0, 0, 1]^T)
- * @param double:   The circle radius.
- * @param int   : the number of circle segments.
- */
-double circleEnergy(const cv::Mat &, cv::Mat &, cv::Mat &, cv::Point3d &, double, int = 10);
+#include <ros/ros.h>
+#include <gtest/gtest.h>
+#include "cwru_opencv_common/projective_geometry.h"
+#include "cwru_opencv_common/ellipse_modeling.h"
 
 
-/*
- * @brief projectCirclePoints 
- * 
- * @param std::vector<Point> &: The resulting list of image points (integers)
- * @param cv::Mat &: The 3x4 camera projection matrix.
- * @param cv::Mat &: The transform matrix between the circle frame and the
- * @param cv::Point3d &:  The circle center in (R^3) (The normal is implicitly [0, 0, 1]^T)
- * @param double:   The circle radius.
- * 
- * @return the ROI which encompasses the list of points.
- */
-cv::Rect projectCirclePoints(std::vector<Point> &, cv::Mat &, cv::Mat &, cv::Point3d &, double rad, int = 10)
+using namespace cv;
 
-};  // namespace cv_ellipse_num
+
+struct ManualLabelingTest : testing::Test {
+
+    // member information:
+    Mat P;
+    Mat 
+
+   
+    ManualLabelingTest() {
+        
+    }
+
+    ~ManualLabelingTest() {
+        delete manualLabeling;
+    }
+};
+
+
+TEST_F(ManualLabelingTest, testManualLabelingCallback) {
+    // Import image
+    
+    // 1. create an ellipse image:
+    // Plot the image 
+
+
+
+    // 2. create an alternative image.
+
+
+    std::string imagePathStr = ros::package::getPath("cwru_opencv_common") + "/test/test_images/test_4_comb_2016-02-01-135224-0000.raw";
+    const char* imagePath = imagePathStr.c_str();
+    cv::Mat imageCv;
+    importRawImage(imagePath, imageCv);
+    // Convert cv::Mat to sensor_msgs::Image
+    sensor_msgs::Image image;
+    cv_bridge::CvImage(std_msgs::Header(), "bgr8", imageCv).toImageMsg(image);
+    // Put image in service request
+    cwru_opencv_common::image_label srv;
+    srv.request.imageQuery = image;
+    srv.request.requestedPoints = 10;
+    // Call service
+    manualLabeling->manualLabelingCallback(srv.request, srv.response);
+    // Convert sensor_msgs::Mat back to cv::Mat
+    cv_bridge::CvImagePtr cvImagePtr;
+    cvImagePtr = cv_bridge::toCvCopy(srv.response.imageResp, sensor_msgs::image_encodings::BGR8);
+    // Show image
+    cv::namedWindow("Labeled image", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Labeled image", cvImagePtr->image);
+    cv::waitKey(0);
+
+}
+
+int main(int argc, char** argv) {
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}

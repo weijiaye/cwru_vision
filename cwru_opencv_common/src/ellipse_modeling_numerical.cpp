@@ -57,36 +57,8 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 	
 	imagePts.clear();
 	imagePts.resize(1);
-	Rect imageROI(-1, -1, 0, 0);
-	Point oldPt(-1,-1);
-	for (int ind(0); ind < segments; ind++)
-	{
-		// compute the point:
-		pt_o.at<double>(0) = cos(ind*3.141/segments)*rad+center.x;
-		pt_o.at<double>(1) = sin(ind*3.141/segments)*rad+center.y;
-		pt_o.at<double>(2) = center.z;
-		pt_o.at<double>(3) = center.z;
-		
-		Mat pt_c = G_co*pt_o;
-		Point3d result;
-		result.x = pt_c.at<double>(0);
-		result.y = pt_c.at<double>(1);
-		result.z = pt_c.at<double>(2);
-		cv::Point2d ptLoc(cv_projective::reprojectPoint(result, P));
-		
-		cv::Point newPt(static_cast<Point> (ptLoc));
-		
-		if (norm(newPt-oldPt) > 0)	
-		{
-			imagePts[0].push_back(newPt);
-			
-			if (imageROI.x > 0)
-			{
-				imageROI |= Rect(newPt+Point(-5, -5), newPt+Point(5, 5));
-			}
-			else imageROI = Rect(newPt+Point(-5, -5), newPt+Point(5, 5));
-		}
-	}
+
+	Rect imageROI(projectCirclePoints(imagePts[1], P, G_co, center, rad, segments))
 	// now create a convex hull.
 	Mat edgeImage(imageROI.height, imageROI.width, CV_32FC1);
 	Mat fillImage(imageROI.height, imageROI.width, CV_32FC1);
@@ -95,6 +67,8 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 
 	drawContours(edgeImage, imagePts, 0, Scalar(255, 255, 255), 3, 8, noArray(), INT_MAX, imageROI.tl()*-1);
 	drawContours(fillImage, imagePts, 0, Scalar(255, 255, 255), -1, 8, noArray(), INT_MAX, imageROI.tl()*-1);
+
+
 	
 	//get the ROI of the base image.
 	Mat subImage(segmentedImage(imageROI));
@@ -128,6 +102,51 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 	// compute the geometric mean:
 	float energy = sqrt(edgeMatch.at<float>(0)*edgeMatch.at<float>(0) + fillMatch.at<float>(0)*fillMatch.at<float>(0));
 	return energy;
+}
+
+
+
+cv::Rect projectCirclePoints(std::vector<Point> & pointList, cv::Mat &P, cv::Mat &G_co, cv::Point3d &center, double rad, int segments)
+{
+	// circle points in object frame. 
+	Mat pt_o(4, 1, CV_64FC1);
+	//create the cirlcle
+	pointList.clear();
+	
+	imagePts.clear();
+	imagePts.resize(1);
+	Rect imageROI(-1, -1, 0, 0);
+	Point oldPt(-1,-1);
+	for (int ind(0); ind < segments; ind++)
+	{
+		// compute the point:
+		pt_o.at<double>(0) = cos(ind*3.141/segments)*rad+center.x;
+		pt_o.at<double>(1) = sin(ind*3.141/segments)*rad+center.y;
+		pt_o.at<double>(2) = center.z;
+		pt_o.at<double>(3) = center.z;
+		
+		Mat pt_c = G_co*pt_o;
+		Point3d result;
+		result.x = pt_c.at<double>(0);
+		result.y = pt_c.at<double>(1);
+		result.z = pt_c.at<double>(2);
+		cv::Point2d ptLoc(cv_projective::reprojectPoint(result, P));
+		
+		cv::Point newPt(static_cast<Point> (ptLoc));
+		
+		if (norm(newPt-oldPt) > 0)	
+		{
+			pointList[0].push_back(newPt);
+			
+			if (imageROI.x > 0)
+			{
+				imageROI |= Rect(newPt+Point(-5, -5), newPt+Point(5, 5));
+			}
+			else imageROI = Rect(newPt+Point(-5, -5), newPt+Point(5, 5));
+		}
+		oldPt = newPt;
+	}
+	return imageROI;
 }
 
 };  // namespace cv_ellipse_num
