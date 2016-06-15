@@ -575,13 +575,9 @@ void computeRvecTvec(const cv::Mat & trans, cv::Mat & rvect, cv::Mat & tvect, cv
     // pull of the rotation matrix as well as the translation vector.
     Mat R_t = trans(Range(0, 3), Range(0, 3));
 
-    Mat tvect = trans.col(3).rowRange(0, 3).clone();
+    tvect = trans.col(3).rowRange(0, 3).clone();
 
-    Rodrigues(R_t, tvect);
-
-    R_jac = R_jac.t();
-
-
+    Rodrigues(R_t, rvect);
     return;
 }
 

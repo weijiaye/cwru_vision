@@ -36,7 +36,6 @@
  */
 
 #include "cwru_opencv_common/projective_geometry.h"
-
 #include "cwru_opencv_common/ellipse_modeling.h"
 
 using namespace cv;
@@ -73,7 +72,7 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 		result.x = pt_c.at<double>(0);
 		result.y = pt_c.at<double>(1);
 		result.z = pt_c.at<double>(2);
-		cv::Point2d ptLoc(reprojectPoint(result, P);
+		cv::Point2d ptLoc(cv_projective::reprojectPoint(result, P));
 		
 		cv::Point newPt(static_cast<Point> (ptLoc));
 		
@@ -89,22 +88,45 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 		}
 	}
 	// now create a convex hull.
-	Mat edgeImage(imageROI.height, imageROI.width, CV_8UC1);
-	Mat fillImage(imageROI.height, imageROI.width, CV_8UC1);
+	Mat edgeImage(imageROI.height, imageROI.width, CV_32FC1);
+	Mat fillImage(imageROI.height, imageROI.width, CV_32FC1);
+	edgeImage.setTo(0);
+	fillImage.setTo(0);
+
 	drawContours(edgeImage, imagePts, 0, Scalar(255, 255, 255), 3, 8, noArray(), INT_MAX, imageROI.tl()*-1);
-	
 	drawContours(fillImage, imagePts, 0, Scalar(255, 255, 255), -1, 8, noArray(), INT_MAX, imageROI.tl()*-1);
 	
 	//get the ROI of the base image.
+	Mat subImage(segmentedImage(imageROI));
 	
+	Mat subImagef;
+
+	subImage.convertTo(subImagef,CV_32F);
 	
 	// make derivative magnitude images.
 	Mat derivX, derivY;
 	
-	scharr()
+	Scharr(subImage, derivX, CV_32F, 1, 0);
+	Scharr(subImage, derivY, CV_32F, 0, 1);
+
+	Mat dMagS(derivX.mul(derivX)+derivY.mul(derivY));
+	Mat dMag;
+	sqrt(dMagS, dMag);
 	
 	// use cross correlation for the fill match, as well as the edge match.
-	
+	// Note: there are several different matching methods: 
+	// http://docs.opencv.org/2.4/modules/imgproc/doc/object_detection.html?highlight=matchtemplate#matchtemplate
+	// edge image:
+	Mat edgeMatch;
+	matchTemplate(dMag, edgeImage, edgeMatch, CV_TM_CCORR_NORMED);
+
+	// fill image
+	Mat fillMatch;
+	matchTemplate(subImagef, fillImage, fillMatch, CV_TM_CCORR_NORMED);
+
+
+	// compute the geometric mean:
+	float energy = sqrt(edgeMatch.at<float>(0)*edgeMatch.at<float>(0) + fillMatch.at<float>(0)*fillMatch.at<float>(0));
 	return energy;
 }
 

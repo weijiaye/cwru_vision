@@ -78,6 +78,7 @@ add_library(projective_lib
 
 add_library(ellipse_modeling_lib
     src/ellipse_modeling.cpp
+    src/ellipse_modeling_numerical.cpp
 )
 
 
@@ -161,6 +162,12 @@ ADD_EXECUTABLE(ellipse_iteration_test test/test_ellipse.cpp)
 
 TARGET_LINK_LIBRARIES(ellipse_iteration_test
     ellipse_modeling_lib
+    ${catkin_LIBRARIES}
+)
+
+TARGET_LINK_LIBRARIES(ellipse_modeling_lib
+    projective_lib
+    ${OpenCV_LIBRARIES}
     ${catkin_LIBRARIES}
 )
 
