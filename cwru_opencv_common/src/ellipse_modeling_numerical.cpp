@@ -36,7 +36,7 @@
  */
 
 #include "cwru_opencv_common/projective_geometry.h"
-#include "cwru_opencv_common/ellipse_modeling.h"
+#include "cwru_opencv_common/ellipse_modeling_numerical.h"
 
 using namespace cv;
 using namespace cv_local;
@@ -58,7 +58,7 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 	imagePts.clear();
 	imagePts.resize(1);
 
-	Rect imageROI(projectCirclePoints(imagePts[1], P, G_co, center, rad, segments))
+	Rect imageROI(projectCirclePoints(imagePts[0], P, G_co, center, rad, segments));
 	// now create a convex hull.
 	Mat edgeImage(imageROI.height, imageROI.width, CV_32FC1);
 	Mat fillImage(imageROI.height, imageROI.width, CV_32FC1);
@@ -106,15 +106,13 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 
 
 
-cv::Rect projectCirclePoints(std::vector<Point> & pointList, cv::Mat &P, cv::Mat &G_co, cv::Point3d &center, double rad, int segments)
+cv::Rect projectCirclePoints(std::vector<Point> & pointList, const cv::Mat &P, const cv::Mat &G_co, const cv::Point3d &center, double rad, int segments)
 {
 	// circle points in object frame. 
 	Mat pt_o(4, 1, CV_64FC1);
 	//create the cirlcle
 	pointList.clear();
-	
-	imagePts.clear();
-	imagePts.resize(1);
+
 	Rect imageROI(-1, -1, 0, 0);
 	Point oldPt(-1,-1);
 	for (int ind(0); ind < segments; ind++)
@@ -136,7 +134,7 @@ cv::Rect projectCirclePoints(std::vector<Point> & pointList, cv::Mat &P, cv::Mat
 		
 		if (norm(newPt-oldPt) > 0)	
 		{
-			pointList[0].push_back(newPt);
+			pointList.push_back(newPt);
 			
 			if (imageROI.x > 0)
 			{

@@ -66,6 +66,6 @@ double circleEnergy(const cv::Mat &, cv::Mat &, cv::Mat &, cv::Point3d &, double
  * 
  * @return the ROI which encompasses the list of points.
  */
-cv::Rect projectCirclePoints(std::vector<Point> &, cv::Mat &, cv::Mat &, cv::Point3d &, double rad, int = 10)
+cv::Rect projectCirclePoints(std::vector<cv::Point> &, const cv::Mat &, const cv::Mat &, const cv::Point3d &, double rad, int = 10);
 
 };  // namespace cv_ellipse_num
