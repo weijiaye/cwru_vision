@@ -93,6 +93,7 @@ target_link_libraries(manual_labeling_server
         ${catkin_LIBRARIES})
 
 add_dependencies(manual_labeling_server cwru_msgs)
+add_dependencies(manual_labeling_server cwru_opencv_common_gencpp)
 
 
 target_link_libraries(opencv_3d_lib
@@ -205,6 +206,7 @@ target_link_libraries(block_detection_lib
 #target_link_libraries(vesselness_image_filter_viewer_node
 #   ${catkin_LIBRARIES}
 # )
+
 
 # Add gtests
 catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
