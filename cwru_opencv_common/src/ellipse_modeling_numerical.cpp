@@ -60,18 +60,27 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 
 	Rect imageROI(projectCirclePoints(imagePts[0], P, G_co, center, rad, segments));
 	// now create a convex hull.
-	Mat edgeImage(imageROI.height, imageROI.width, CV_32FC1);
-	Mat fillImage(imageROI.height, imageROI.width, CV_32FC1);
+
+	
+
+	Rect baseRect(Point(0, 0), segmentedImage.size());
+
+	Rect finalROI(imageROI & baseRect);
+
+	if (finalROI.area() == 0) return 0.0;
+
+	Mat edgeImage(finalROI.height, finalROI.width, CV_32FC1);
+	Mat fillImage(finalROI.height, finalROI.width, CV_32FC1);
 	edgeImage.setTo(0);
 	fillImage.setTo(0);
 
-	drawContours(edgeImage, imagePts, 0, Scalar(255, 255, 255), 3, 8, noArray(), INT_MAX, imageROI.tl()*-1);
-	drawContours(fillImage, imagePts, 0, Scalar(255, 255, 255), -1, 8, noArray(), INT_MAX, imageROI.tl()*-1);
+	drawContours(edgeImage, imagePts, 0, Scalar(255, 255, 255), 3, 8, noArray(), INT_MAX, finalROI.tl()*-1);
+	drawContours(fillImage, imagePts, 0, Scalar(255, 255, 255), -1, 8, noArray(), INT_MAX, finalROI.tl()*-1);
 
 
 	
 	//get the ROI of the base image.
-	Mat subImage(segmentedImage(imageROI));
+	Mat subImage(segmentedImage(finalROI));
 	
 	Mat subImagef;
 
@@ -118,10 +127,10 @@ cv::Rect projectCirclePoints(std::vector<Point> & pointList, const cv::Mat &P, c
 	for (int ind(0); ind < segments; ind++)
 	{
 		// compute the point:
-		pt_o.at<double>(0) = cos(ind*3.141/segments)*rad+center.x;
-		pt_o.at<double>(1) = sin(ind*3.141/segments)*rad+center.y;
+		pt_o.at<double>(0) = cos(2*ind*3.141/segments)*rad+center.x;
+		pt_o.at<double>(1) = sin(2*ind*3.141/segments)*rad+center.y;
 		pt_o.at<double>(2) = center.z;
-		pt_o.at<double>(3) = center.z;
+		pt_o.at<double>(3) = 1.0;
 		
 		Mat pt_c = G_co*pt_o;
 		Point3d result;

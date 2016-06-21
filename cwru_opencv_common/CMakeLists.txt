@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   cwru_msgs
 )
 
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+
 add_service_files(DIRECTORY srv  
 FILES image_label.srv
   )
@@ -217,31 +219,35 @@ target_link_libraries(block_detection_lib
 # )
 
 # Add gtests
-catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
 
-target_link_libraries(gtest_manual_labeling
-        manual_labeling_server
-        ${OpenCV_LIBRERIES}
-        ${catkin_LIBRARIES})
+
+
 
 
 catkin_add_gtest(gtest_ellipse_matching test/gtest_ellipse_matching.cpp)
 
 target_link_libraries(gtest_ellipse_matching
         ellipse_modeling_lib
+        opencv_rot_lib
         ${OpenCV_LIBRERIES}
         ${catkin_LIBRARIES})
 
 
 
 # Add rostests
-add_rostest_gtest(rostest_manual_labeling test/rostest_manual_labeling.test test/rostest_manual_labeling.cpp)
-target_link_libraries(rostest_manual_labeling manual_labeling_server ${catkin_LIBRARIES})
+# add_rostest_gtest(rostest_manual_labeling test/rostest_manual_labeling.test test/rostest_manual_labeling.cpp)
+# target_link_libraries(rostest_manual_labeling manual_labeling_server ${catkin_LIBRARIES})
+# catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
+# target_link_libraries(gtest_manual_labeling
+#        manual_labeling_server
+#        ${OpenCV_LIBRERIES}
+#        ${catkin_LIBRARIES})
 
 
 add_rostest_gtest(rostest_ellipse_matching test/rostest_ellipse_matching.test test/rostest_ellipse_matching.cpp)
 
 target_link_libraries(rostest_ellipse_matching
         ellipse_modeling_lib
+        opencv_rot_lib
         ${OpenCV_LIBRERIES}
         ${catkin_LIBRARIES})
