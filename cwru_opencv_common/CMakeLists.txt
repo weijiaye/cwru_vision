@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
-  cwru_msgs
 )
 
 add_service_files(DIRECTORY srv  
@@ -25,13 +24,12 @@ generate_messages(
   std_msgs  
   geometry_msgs
   sensor_msgs
-  cwru_msgs
 )
 
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib projective_lib opencv_3d_lib opencv_2d_lib opencv_local_lib opencv_rot_lib color_model_lib
-    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs cwru_msgs
+    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
     DEPENDS OpenCV
 )
 
@@ -92,7 +90,6 @@ target_link_libraries(manual_labeling_server
         ${OpenCV_LIBRARIES}
         ${catkin_LIBRARIES})
 
-add_dependencies(manual_labeling_server cwru_msgs)
 add_dependencies(manual_labeling_server cwru_opencv_common_gencpp)
 
 
