@@ -14,10 +14,7 @@
 #define _OPENCV_LOCAL_H
 
 
-
-
-
-//#define PI 3.14159265359
+// #define PI 3.14159265359
 
 #include <opencv2/opencv.hpp>
 
@@ -42,6 +39,12 @@ struct stereoCorrespondence{
 		return i==0? left : right;
 	}
 	
+	stereoCorrespondence& operator = (const stereoCorrespondence & in_)
+	{
+		left = in_.left;
+		left = in_.right;
+	}
+
 };
 
 

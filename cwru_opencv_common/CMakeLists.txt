@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cwru_opencv_common)
 find_package(OpenCV REQUIRED)
 
-
+find_package(rostest REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
@@ -12,13 +12,27 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+  cwru_msgs
+)
+
+add_service_files(DIRECTORY srv  
+FILES image_label.srv
+  )
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs  
+  geometry_msgs
+  sensor_msgs
+  cwru_msgs
 )
 
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib
-    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
-    #   DEPENDS system_lib
+    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib projective_lib opencv_3d_lib opencv_2d_lib opencv_local_lib opencv_rot_lib color_model_lib
+    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs cwru_msgs
+    DEPENDS OpenCV
 )
 
 SET(LIB_TYPE STATIC) 
@@ -71,9 +85,27 @@ add_library(color_model_lib
     src/color_model.cpp
 )
 
+add_library(manual_labeling_server src/manual_labeling.cpp)
+
+target_link_libraries(manual_labeling_server
+        opencv_ui_lib
+        ${OpenCV_LIBRARIES}
+        ${catkin_LIBRARIES})
+
+add_dependencies(manual_labeling_server cwru_msgs)
+add_dependencies(manual_labeling_server cwru_opencv_common_gencpp)
 
 
+target_link_libraries(opencv_3d_lib
+   projective_lib
+   ${OpenCV_LIBRARIES}
+   ${catkin_LIBRARIES}
+ )
 
+target_link_libraries(projective_lib
+   ${OpenCV_LIBRARIES}
+   ${catkin_LIBRARIES}
+ )
 
 #catkin_package(
 #    INCLUDE_DIRS include
@@ -139,10 +171,10 @@ add_library(color_model_lib
 #  #${PCL_LIBRARIES}
 #)
 
-#target_link_libraries(catheter_import_lib
-#    #opencv_imgcodecs
-#    ${catkin_LIBRARIES}
-#)
+target_link_libraries(block_detection_lib
+    opencv_local_lib
+    ${catkin_LIBRARIES}
+)
 
 
 #target_link_libraries(vesselness_image_filter_gpu_node
@@ -174,3 +206,15 @@ add_library(color_model_lib
 #target_link_libraries(vesselness_image_filter_viewer_node
 #   ${catkin_LIBRARIES}
 # )
+
+
+# Add gtests
+catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
+target_link_libraries(gtest_manual_labeling
+        manual_labeling_server
+        ${OpenCV_LIBRERIES}
+        ${catkin_LIBRARIES})
+
+# Add rostests
+add_rostest_gtest(rostest_manual_labeling test/rostest_manual_labeling.test test/rostest_manual_labeling.cpp)
+target_link_libraries(rostest_manual_labeling manual_labeling_server ${catkin_LIBRARIES})
