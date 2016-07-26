@@ -11,7 +11,7 @@ sensor_msgs/Image imageQuery
 ---
 
 #list of response points:
-cwru_msgs/point2d_list pointsResp
+geometry_msgs/Polygon pointsResp
 
 
 #labeled image response
