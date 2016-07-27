@@ -206,12 +206,8 @@ target_link_libraries(block_detection_lib
 
 
 # Add gtests
-catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
+catkin_add_gtest(gtest_manual_labeling test/gtest_manual_labeling.cpp)
 target_link_libraries(gtest_manual_labeling
         manual_labeling_server
         ${OpenCV_LIBRERIES}
         ${catkin_LIBRARIES})
-
-# Add rostests
-add_rostest_gtest(rostest_manual_labeling test/rostest_manual_labeling.test test/rostest_manual_labeling.cpp)
-target_link_libraries(rostest_manual_labeling manual_labeling_server ${catkin_LIBRARIES})
