@@ -14,11 +14,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+SET(LIB_TYPE STATIC) 
+
 add_service_files(DIRECTORY srv  
 FILES image_label.srv
   )
 
-## Generate added messages and services with any dependencies listed here
+#
+# Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
   std_msgs  
@@ -33,7 +36,7 @@ catkin_package(
     DEPENDS OpenCV
 )
 
-SET(LIB_TYPE STATIC) 
+
 
 
 include_directories(
