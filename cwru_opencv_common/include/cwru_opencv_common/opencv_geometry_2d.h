@@ -22,11 +22,11 @@
 namespace cv_2d{
 
 
-double blobCenterDirections(const cv::Mat & , cv::Point2d* , cv::Point2d* = NULL , cv::Point2d* =NULL );
+double blobCenterDirections(const cv::Mat & , cv::Point2d* , cv::Point2d* = NULL , cv::Point2d* = NULL );
 
 
 
-
+double iterate_circle(const cv:: Mat &);
 
 
 

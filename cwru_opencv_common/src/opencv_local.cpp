@@ -24,7 +24,11 @@ OpenCV (2.3.1)
 using namespace cv;
 using namespace cv_local;
 
-namespace cv_local{
+namespace cv_local
+{
+
+
+
 
 int byteError(int a,int b){
 
@@ -133,6 +137,9 @@ int countOutputChannels(int conversion){
 			return -1;
 	}
 }
+
+ 
+
 
 };
 

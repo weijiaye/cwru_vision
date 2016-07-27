@@ -14,11 +14,17 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+SET(LIB_TYPE STATIC) 
+
+
+
 add_service_files(DIRECTORY srv  
 FILES image_label.srv
   )
 
-## Generate added messages and services with any dependencies listed here
+#
+# Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
   std_msgs  
@@ -28,12 +34,12 @@ generate_messages(
 
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib projective_lib opencv_3d_lib opencv_2d_lib opencv_local_lib opencv_rot_lib color_model_lib
+    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib projective_lib opencv_3d_lib opencv_2d_lib opencv_local_lib opencv_rot_lib color_model_lib ellipse_modeling_lib
     CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
     DEPENDS OpenCV
 )
 
-SET(LIB_TYPE STATIC) 
+
 
 
 include_directories(
@@ -74,6 +80,11 @@ add_library(projective_lib
     src/projective_geometry.cpp
 )
 
+add_library(ellipse_modeling_lib
+    src/ellipse_modeling.cpp
+    src/ellipse_modeling_numerical.cpp
+)
+
 
 add_library(grab_cut_lib
     src/grab_cut.cpp
@@ -104,56 +115,18 @@ target_link_libraries(projective_lib
    ${catkin_LIBRARIES}
  )
 
-#catkin_package(
-#    INCLUDE_DIRS include
-#    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib
-#    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
-    #   DEPENDS system_lib
-    #)
 
+ADD_EXECUTABLE(manual_labeling node/manual_labeling_node.cpp)
 
-#SET(CUDA_NVCC_FLAGS "-arch=sm_13" CACHE STRING "nvcc flags" FORCE)
-#SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
-#SET(LIB_TYPE STATIC) 
-
-
-#include_directories(
-#  include
-#  ${catkin_INCLUDE_DIRS}
-#)
-
-
-#CUDA_ADD_LIBRARY(vesselness_image_filter_gpu_kernels src/gpu_src/vesselness_image_filter_kernels.cu)
-#CUDA_ADD_LIBRARY(vesselness_image_gpu src/gpu_src/vesselness_image_filter_gpu.cu)
+TARGET_LINK_LIBRARIES(manual_labeling
+    manual_labeling_server
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 
 
-#add_library(dummy_lib
-#    src/dummylib.cpp
-#)
-
-#add_library(catadioptric_calibration_lib
-    #   src/catadioptric_calibration.cpp
-   # )
-
-#add_library(catheter_driver_lib
-    #   src/catheter_driver.cpp
-   # )
-
-#add_library(catheter_import_lib
-#   src/catheter_image_import.cpp
-# )
-
-
-#cuda_add_library( 
-
-#add_library(vesselness_image_filter
-#   src/${PROJECT_NAME}/src/vesselness_image_filter.cpp
-# )
-
-
-
-#ADD_EXECUTABLE(vesselness_image_filter_cpu_node src/cpu_src/vesselness_image_filter_cpu_node.cpp)
+ADD_EXECUTABLE(ellipse_iteration_test test/test_ellipse.cpp)
 
 #ADD_EXECUTABLE(catheter_playback_node src/catheter_playback_node.cpp)
 
@@ -162,11 +135,16 @@ target_link_libraries(projective_lib
 #ADD_EXECUTABLE(vesselness_image_filter_cpu src/cpu_src/vesselness_image_filter_gpu.cpp)
 #ADD_DEPENDENCIES(beginner_tutorials_node T)
 
-#TARGET_LINK_LIBRARIES(
-#   #vesselness_image_filter
-#   ${catkin_LIBRARIES}
-#  #${PCL_LIBRARIES}
-#)
+TARGET_LINK_LIBRARIES(ellipse_iteration_test
+    ellipse_modeling_lib
+    ${catkin_LIBRARIES}
+)
+
+TARGET_LINK_LIBRARIES(ellipse_modeling_lib
+    projective_lib
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 target_link_libraries(block_detection_lib
     opencv_local_lib
@@ -174,40 +152,66 @@ target_link_libraries(block_detection_lib
 )
 
 
-#target_link_libraries(vesselness_image_filter_gpu_node
-#   vesselness_image_base
-#  vesselness_image_gpu
-#  vesselness_image_filter_gpu_kernels
-#  ${CUDA_LIBRARIES}
-#  ${OpenCV_LIBRARIES}
-#  ${catkin_LIBRARIES}
-# )
 
-#target_link_libraries(vesselness_image_cpu
-#  vesselness_image_base
-#   ${catkin_LIBRARIES}
-# )
 
-#target_link_libraries(vesselness_image_gpu
-# vesselness_image_gpu
-# vesselness_image_filter_gpu_kernels
-#  vesselness_image_base
-#   ${CUDA_LIBRARIES}
-#   ${catkin_LIBRARIES}
-# )
-
-#target_link_libraries(vesselness_image_base
-#   ${catkin_LIBRARIES}
-# )
-
-#target_link_libraries(vesselness_image_filter_viewer_node
-#   ${catkin_LIBRARIES}
-# )
 
 
 # Add gtests
-catkin_add_gtest(gtest_manual_labeling test/gtest_manual_labeling.cpp)
-target_link_libraries(gtest_manual_labeling
-        manual_labeling_server
+
+
+catkin_add_gtest(gtest_cv_rotations test/gtest_cv_rotations.cpp)
+
+target_link_libraries(gtest_cv_rotations
+        opencv_rot_lib
         ${OpenCV_LIBRERIES}
         ${catkin_LIBRARIES})
+
+
+catkin_add_gtest(gtest_ellipse_matching test/gtest_ellipse_matching.cpp)
+
+target_link_libraries(gtest_ellipse_matching
+        ellipse_modeling_lib
+        opencv_rot_lib
+        ${OpenCV_LIBRERIES}
+        ${catkin_LIBRARIES})
+
+
+# gtesting for the projective geometry library:
+
+catkin_add_gtest(gtest_point_array_projection test/gtest_point_array_projection.cpp)
+
+
+target_link_libraries(gtest_point_array_projection
+       projective_lib
+       ${OpenCV_LIBRERIES}
+       ${catkin_LIBRARIES})
+
+
+
+
+# Add rostests
+# add_rostest_gtest(rostest_manual_labeling test/rostest_manual_labeling.test test/rostest_manual_labeling.cpp)
+# target_link_libraries(rostest_manual_labeling manual_labeling_server ${catkin_LIBRARIES})
+# catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
+# target_link_libraries(gtest_manual_labeling
+#        manual_labeling_server
+#        ${OpenCV_LIBRERIES}
+#        ${catkin_LIBRARIES})
+
+
+#add_rostest_gtest(rostest_ellipse_matching test/rostest_ellipse_matching.test test/rostest_ellipse_matching.cpp)
+
+#target_link_libraries(rostest_ellipse_matching
+#        ellipse_modeling_lib
+#        opencv_rot_lib
+#        ${OpenCV_LIBRERIES}
+#        ${catkin_LIBRARIES})
+
+
+        
+#add_rostest_gtest(rostest_point_array_projection test/gtest_point_array_projection.test test/gtest_point_array_projection.cpp)
+
+#target_link_libraries(rostest_point_array_projection
+#      projective_lib
+#      ${OpenCV_LIBRERIES}
+#      ${catkin_LIBRARIES})
