@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 SET(LIB_TYPE STATIC) 
 
 
