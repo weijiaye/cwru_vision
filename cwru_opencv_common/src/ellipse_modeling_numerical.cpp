@@ -139,7 +139,7 @@ cv::Rect projectCirclePoints(std::vector<Point> & pointList, const cv::Mat &P, c
 		result.z = pt_c.at<double>(2);
 		cv::Point2d ptLoc(cv_projective::reprojectPoint(result, P));
 		
-		cv::Point newPt(static_cast<Point> (ptLoc));
+		cv::Point newPt(ptLoc.x, ptLoc.y);
 		
 		if (norm(newPt-oldPt) > 0)	
 		{

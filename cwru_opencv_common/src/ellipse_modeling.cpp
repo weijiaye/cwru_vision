@@ -260,8 +260,8 @@ double computeEllipseEnergy(const Rect &subRect, const RotatedRect& ellipseRect,
 
     Mat imageMask(subImage.size(), CV_8UC1);
     Mat imageMaskOutline(subImage.size(), CV_8UC1);
-    imageMask = 0;
-    imageMaskOutline = 0;
+    imageMask = Scalar(0);
+    imageMaskOutline = Scalar(0);
   
     
     ellipse(imageMaskOutline, offsetEllipse, Scalar(255), 1);  // line width is variable (5)
