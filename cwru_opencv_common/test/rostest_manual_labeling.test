@@ -1,4 +1,0 @@
-<launch>
-    <node pkg="cwru_opencv_common" type="manual_labeling_server" name="manual_labeling_server"/>
-    <test test-name="manual_labeling_test" pkg="cwru_opencv_common" type="rostest_manual_labeling"/>
-</launch>
