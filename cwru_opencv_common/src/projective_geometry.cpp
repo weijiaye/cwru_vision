@@ -162,12 +162,12 @@ cv::Point2d reprojectPoint(const cv::Point3d &point, const cv::Mat &P,const cv::
 
 void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints, const cv::Mat &P, const cv::Mat &G, cv::OutputArray jac)
 {
-    // verify the correct form of the spacial points and that they have the correct dimensions 
-    
+    // verify the correct form of the spacial points and that they have the correct dimensions
+
 
     Mat spacialPoints = _spacialPoints.getMat();
 
-    //is one dimension 3 (or 4)?
+    // is one dimension 3 (or 4)?
     bool tuple3((spacialPoints.type() == CV_32FC3 && (spacialPoints.rows == 1 || spacialPoints.cols == 3) && (spacialPoints.rows == 3 || spacialPoints.cols == 1)); 
 
     /** @todo Add the CV_Asserts and necessary checks for the format of the code. */
@@ -203,15 +203,30 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
 
     _imagePoints.create(2, pointCount, CV_64FC1);
     Mat imagePoints = _imagePoints.getMat();
-    for (int ind(0); ind < pointCount; ind++;)
+
+    // initialize the jacobian if it is needed.
+    // The jacobian will rely on the SE(3) component of the transform.
+    if (jac.needed())
     {
-        results.at<double>(0,ind)/results.at<double>(2,ind);
+
     }
 
-    output.x = results.at<double>(0,0)/results.at<double>(2,0);
-    output.y = results.at<double>(1,0)/results.at<double>(2,0);
+    // normalize the point in image space.
+    for (int ind(0); ind < pointCount; ind++;)
+    {
+        imagePoints.at<double>(0,ind) = results.at<double>(0,ind)/results.at<double>(2,ind);
+        imagePoints.at<double>(1,ind) = results.at<double>(1,ind)/results.at<double>(2,ind);
 
-    if(jac.needed())
+        // if the Jacobian is required, add to it
+        if (jac.needed())
+        {
+
+        }
+    }
+
+    
+
+    
     {
         Mat derivPt =Mat::zeros(2,3,CV_64FC1);
         derivPt.at<double>(0,0) = 1.0;
