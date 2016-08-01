@@ -159,6 +159,78 @@ cv::Point2d reprojectPoint(const cv::Point3d &point, const cv::Mat &P,const cv::
     return output;
 }
 
+// make this valid for multiple points.
+cv::Mat reprojectPoint(const cv::Point3d &point, const cv::Mat &P,const cv::Mat& G, cv::OutputArray jac)
+{
+
+
+    Mat prjPoints(4, 1, CV_64FC1);
+    Mat results(3, 1, CV_64FC1);
+    Mat output(2, 1, CV_64FC1);
+
+    Mat ptMat(4,1,CV_64FC1);
+    ptMat.at<double>(0,0) = point.x;
+    ptMat.at<double>(1,0) = point.y;
+    ptMat.at<double>(2,0) = point.z;
+    ptMat.at<double>(3,0) = 1.0;
+
+    Mat transJac;
+
+    if(G.total() != 16)
+    {
+        return Mat();
+    }
+    
+    if(jac.needed())
+    {
+        prjPoints = transformPointsSE3(ptMat, G, transJac)
+    }
+    else
+    {
+        prjPoints = transformPoints(ptMat,rvec,tvec);
+    }
+    
+
+    results = P*prjPoints;
+    output.x = results.at<double>(0,0)/results.at<double>(2,0);
+    output.y = results.at<double>(1,0)/results.at<double>(2,0);
+
+    if(jac.needed())
+    {
+        Mat derivPt =Mat::zeros(2,3,CV_64FC1);
+        derivPt.at<double>(0,0) = 1.0;
+        derivPt.at<double>(0,2) = -results.at<double>(0,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
+        derivPt.at<double>(1,1) = 1.0;
+        derivPt.at<double>(1,2) = -results.at<double>(1,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
+
+        Mat dABdA,dABdB;
+        matMulDeriv(P,prjPoints,dABdA,dABdB);
+        Mat prjDeriv = dABdB.rowRange(0,3).colRange(0,3);
+        Mat prjDerivD;
+        prjDeriv.convertTo(prjDerivD,CV_64FC1);
+        if(rvec.total()==3 && tvec.total()==3)
+        {
+
+            jac.create(2,9,CV_64FC1);
+            Mat jacMat = jac.getMat();
+
+            Mat fullDeriv =  derivPt*prjDeriv*transDeriv;
+            fullDeriv.copyTo(jacMat);
+        }
+        else
+        {
+            //ROS_INFO("No rvec needed for Jac");
+            //ROS_INFO_STREAM(derivPt);
+            //ROS_INFO_STREAM(prjDerivD);
+            jac.create(2,3,CV_64FC1);
+            Mat jacMat = jac.getMat();
+            Mat finalJac = derivPt*prjDerivD;
+            finalJac.copyTo(jacMat);
+        }
+
+    }
+    return output;
+}
 
 void reprojectPoints(InputArray pointsIn, OutputArray pointsOut,const cv::Mat &P,const cv::Mat& rvec, const cv::Mat &tvec)
 {
@@ -610,6 +682,38 @@ Mat transformPoints(const cv::Mat &points,const cv::Mat& rvec, const cv::Mat &tv
         return transform*points;
 }
 
+//Transforms a point using rvec and tvec.
+Mat transformPointsSE3(const cv::Mat &points,const cv::Mat &G, cv::OutputArray jac)
+{
+        CV_Assert(points.depth() == CV_32F || points.depth() == CV_64F);
+        CV_Assert(points.cols > 0 && points.rows == 4);
+        CV_Assert(G.cols == 4 && G.rows == 4);
+        if(jac.needed())
+        {
 
-};
+            Mat transformJac;
+            Mat dABdA,dABdB;
+            matMulDeriv(G,points,dABdA,dABdB); 
+            //dABdA is 4x16 because it ignores the fact that the last 4 numbers (last row) of G is a constant. and the last number of a point is a constant
+            //dABdB is 4x4.
+            //The full jacobian must be 3x9
+            // [ d (transform points) / d points , d (transform points) / d rvec , d (transform points) / d tvec ]^T
+            // [ 3 x 3 , 3 x 3 , 3x3 ]^T
+
+            jac.create(3 , 9, CV_64FC1);
+            Mat jacMat = jac.getMat();
+            Mat pointDerivative = dABdB.rowRange(0,3).colRange(0,3);
+            Mat jacPoint = jacMat.colRange(0,3);
+
+            pointDerivative.copyTo(jacPoint);
+
+            Mat transDerivative = dABdA.colRange(0,12).rowRange(0,3)*transformJac;
+            Mat jacTrans = jacMat.colRange(3,9);
+            transDerivative.copyTo(jacTrans);
+        }
+
+        return G*points;
+}
+
+};  // namespace cv_projective
 

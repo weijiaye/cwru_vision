@@ -31,13 +31,13 @@ public:
      */
     ~ManualLabeling();
 
-protected:
-
     /**
      * \brief Manual labeling callback function
      */
     bool manualLabelingCallback(cwru_opencv_common::image_label::Request& request,
                                 cwru_opencv_common::image_label::Response& response);
+
+protected:
 
     /**
      * \brief Grow blob from seed
@@ -63,11 +63,6 @@ protected:
      * \brief Manual image labeling server
      */
     ros::ServiceServer manualLabelingServer_;
-
-    /**
-     * \brief FRIEND_TEST allows gtest to access private member functions/variables during testing
-     */
-    FRIEND_TEST(ManualLabelingTest, testManualLabelingCallback);
 
 };
 
