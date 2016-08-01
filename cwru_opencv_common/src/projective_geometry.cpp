@@ -159,8 +159,97 @@ cv::Point2d reprojectPoint(const cv::Point3d &point, const cv::Mat &P,const cv::
     return output;
 }
 
+
+void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints, const cv::Mat &P, const cv::Mat &G, cv::OutputArray jac)
+{
+    // verify the correct form of the spacial points and that they have the correct dimensions 
+    
+
+    Mat spacialPoints = _spacialPoints.getMat();
+
+    //is one dimension 3 (or 4)?
+    bool tuple3((spacialPoints.type() == CV_32FC3 && (spacialPoints.rows == 1 || spacialPoints.cols == 3) && (spacialPoints.rows == 3 || spacialPoints.cols == 1)); 
+
+    /** @todo Add the CV_Asserts and necessary checks for the format of the code. */
+
+
+    // Resize the spatial point so that they are members of RP3
+    Mat spacialPointsRP3(4, spacialPoints.cols, CV_32FC1);
+
+    // scope the temporary variables
+    {
+        spacialPointsRP3.setTo(1.0);
+        Mat subMat(spacialPointsRP3.rowRange(0, 3));
+        spacialPoints.copyTo(spacialPointsRP3);
+    }
+
+
+
+    // convert the points into the camera frame.
+    Mat transJac, cameraPoints;
+    if (jac.needed())
+    {
+        cameraPoints = transformPointsSE3(spacialPoints, G, transJac);
+    }
+    else
+    {
+        cameraPoints = transformPointsSE3(spacialPoints, G);
+    }
+
+    // project the points into the image frame.
+    Mat results(P*cameraPoints);
+
+    int pointCount(cameraPoints.cols);
+
+    _imagePoints.create(2, pointCount, CV_64FC1);
+    Mat imagePoints = _imagePoints.getMat();
+    for (int ind(0); ind < pointCount; ind++;)
+    {
+        results.at<double>(0,ind)/results.at<double>(2,ind);
+    }
+
+    output.x = results.at<double>(0,0)/results.at<double>(2,0);
+    output.y = results.at<double>(1,0)/results.at<double>(2,0);
+
+    if(jac.needed())
+    {
+        Mat derivPt =Mat::zeros(2,3,CV_64FC1);
+        derivPt.at<double>(0,0) = 1.0;
+        derivPt.at<double>(0,2) = -results.at<double>(0,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
+        derivPt.at<double>(1,1) = 1.0;
+        derivPt.at<double>(1,2) = -results.at<double>(1,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
+
+        Mat dABdA,dABdB;
+        matMulDeriv(P,prjPoints,dABdA,dABdB);
+        Mat prjDeriv = dABdB.rowRange(0,3).colRange(0,3);
+        Mat prjDerivD;
+        prjDeriv.convertTo(prjDerivD,CV_64FC1);
+        if(rvec.total()==3 && tvec.total()==3)
+        {
+
+            jac.create(2,9,CV_64FC1);
+            Mat jacMat = jac.getMat();
+
+            Mat fullDeriv =  derivPt*prjDeriv*transDeriv;
+            fullDeriv.copyTo(jacMat);
+        }
+        else
+        {
+            //ROS_INFO("No rvec needed for Jac");
+            //ROS_INFO_STREAM(derivPt);
+            //ROS_INFO_STREAM(prjDerivD);
+            jac.create(2,3,CV_64FC1);
+            Mat jacMat = jac.getMat();
+            Mat finalJac = derivPt*prjDerivD;
+            finalJac.copyTo(jacMat);
+        }
+
+    }
+    return output;
+}
+
 // make this valid for multiple points.
-cv::Mat reprojectPoint(const cv::Point3d &point, const cv::Mat &P,const cv::Mat& G, cv::OutputArray jac)
+cv::Mat reprojectPoints(const cv::Point3d &point, const cv::Mat &P,const cv::Mat& G, cv::OutputArray jac)
 {
 
 

@@ -59,8 +59,14 @@ private:
  *
  */
 cv::Point2d reprojectPoint(const cv::Point3d &point, const cv::Mat &P,const cv::Mat& = cv::Mat(), const cv::Mat & = cv::Mat(), cv::OutputArray = cv::noArray());
-void reprojectPoints(cv::InputArray spacialPoints, cv::OutputArray imagePoints, const cv::Mat &P, const cv::Mat & = cv::Mat(), const cv::Mat & = cv::Mat());
+void reprojectPoints(cv::InputArray spacialPoints, cv::OutputArray imagePoints, const cv::Mat &P, const cv::Mat &, const cv::Mat &);
 
+/** 
+ * @brief reprojects a list of points from the local object frame to the image.
+ * 
+ * Note, the current input is expected to be a  3 x n CV_64FC1 matrix where n is the number of points.
+ */ 
+void reprojectPoints(cv::InputArray spacialPoints, cv::OutputArray imagePoints, const cv::Mat &P, const cv::Mat &, cv::OutputArray = cv::noArray())
 
 
 
