@@ -728,7 +728,18 @@ void transformJacobian(const Mat &rvec ,const Mat & tvec, Mat & trans , OutputAr
 
     return;
 
+}
 
+
+void computeRvecTvec(const cv::Mat & trans, cv::Mat & rvect, cv::Mat & tvect, cv::OutputArray trans_jac)
+{
+    // pull of the rotation matrix as well as the translation vector.
+    Mat R_t = trans(Range(0, 3), Range(0, 3));
+
+    tvect = trans.col(3).rowRange(0, 3).clone();
+
+    Rodrigues(R_t, rvect);
+    return;
 }
 
 

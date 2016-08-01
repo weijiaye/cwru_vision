@@ -2,7 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2016 Case Western Reserve University
- *    Russell Jackson <rcj33@case.edu>
+ *    Russell C Jackson <rcj33@case.edu>
  *
  *  All rights reserved.
  *
@@ -35,65 +35,37 @@
  *
  */
 
+
+ //  This file contains functions which are  meant to handle numerical ellipse optimization.
+
+
+namespace cv_ellipse_num
+{
+
 /*
- * This file defines a class of color tracking model.
- * The model assumes that a color distribution is a gaussian in RGB space. 
- * The segmentation is simply a multivariate gaussian probability (the final result is normalized using the l_infinity norm).
- * A mask is used to generate the initial fit.
+ * @brief ellipseEnergy computes the energy functional of the alignment between the rotated rect & the ellipse.
+ * 
+ * @param cv::Mat &: The input image (assumed to be a single channel image)
+ * @param cv::Mat &: The 3x4 camera projection matrix.
+ * @param cv::Mat &: The transform matrix between the circle frame and the
+ * @param cv::Point3d &:  The circle center in (R^3) (The normal is implicitly [0, 0, 1]^T)
+ * @param double:   The circle radius.
+ * @param int   : the number of circle segments.
  */
+double circleEnergy(const cv::Mat &, cv::Mat &, cv::Mat &, cv::Point3d &, double, int = 10);
 
 
-#ifndef COLORMODEL_H
-#define COLORMODEL_H  
+/*
+ * @brief projectCirclePoints 
+ * 
+ * @param std::vector<Point> &: The resulting list of image points (integers)
+ * @param cv::Mat &: The 3x4 camera projection matrix.
+ * @param cv::Mat &: The transform matrix between the circle frame and the
+ * @param cv::Point3d &:  The circle center in (R^3) (The normal is implicitly [0, 0, 1]^T)
+ * @param double:   The circle radius.
+ * 
+ * @return the ROI which encompasses the list of points.
+ */
+cv::Rect projectCirclePoints(std::vector<cv::Point> &, const cv::Mat &, const cv::Mat &, const cv::Point3d &, double rad, int = 10);
 
-#include <cv.h>
-
-
-namespace cv_color_model{
-
-class ColorModel{
-
-public:
-  explicit ColorModel(const cv::Mat & , const cv::Mat &); // uses a pre-defined mask
-  explicit ColorModel(const ColorModel&);  // copy constructor;
-  // explicit ColorModel(const cv::Mat &); // manually defined mask.
-
-  cv::Mat segmentImage(const cv::Mat &);
-
-  void printModelInfo();
-
-  void floatMaskInit(const cv::Mat &, const cv::Mat&);
-  void binaryMaskInit(const cv::Mat &, const cv::Mat&);
-
-private:
-    cv::Matx<float, 3, 3> colorVariance;
-    cv::Matx<float, 3, 1> colorMean;
-};
-
-
-// HSV Color Model.
-class ColorModelHSV{
-
-public:
-  explicit ColorModelHSV(const cv::Mat & , const cv::Mat &, int); // uses a pre-defined mask
-  explicit ColorModelHSV(const ColorModelHSV&);  // copy constructor;
-  // explicit ColorModelHSV(const cv::Mat &); // manually defined mask.
-
-  cv::Mat segmentImage(const cv::Mat &);
-
-  void printModelInfo();
-
-  void floatMaskInit(const cv::Mat &, const cv::Mat&, int);
-  void binaryMaskInit(const cv::Mat &, const cv::Mat&, int);
-
-private:
-    cv::Matx<float, 3, 3> colorVariance;
-    cv::Matx<float, 3, 1> colorMean;
-};
-
-
-};  // namespace cv_color_model
-
-
-
-#endif
+};  // namespace cv_ellipse_num

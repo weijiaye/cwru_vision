@@ -14,7 +14,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 SET(LIB_TYPE STATIC) 
+
 
 add_service_files(DIRECTORY srv  
 FILES image_label.srv
@@ -75,6 +77,11 @@ add_library(opencv_rot_lib
 
 add_library(projective_lib
     src/projective_geometry.cpp
+)
+
+add_library(ellipse_modeling_lib
+    src/ellipse_modeling.cpp
+    src/ellipse_modeling_numerical.cpp
 )
 
 
@@ -156,7 +163,7 @@ target_link_libraries(projective_lib
 
 
 
-#ADD_EXECUTABLE(vesselness_image_filter_cpu_node src/cpu_src/vesselness_image_filter_cpu_node.cpp)
+ADD_EXECUTABLE(ellipse_iteration_test test/test_ellipse.cpp)
 
 #ADD_EXECUTABLE(catheter_playback_node src/catheter_playback_node.cpp)
 
@@ -165,11 +172,16 @@ target_link_libraries(projective_lib
 #ADD_EXECUTABLE(vesselness_image_filter_cpu src/cpu_src/vesselness_image_filter_gpu.cpp)
 #ADD_DEPENDENCIES(beginner_tutorials_node T)
 
-#TARGET_LINK_LIBRARIES(
-#   #vesselness_image_filter
-#   ${catkin_LIBRARIES}
-#  #${PCL_LIBRARIES}
-#)
+TARGET_LINK_LIBRARIES(ellipse_iteration_test
+    ellipse_modeling_lib
+    ${catkin_LIBRARIES}
+)
+
+TARGET_LINK_LIBRARIES(ellipse_modeling_lib
+    projective_lib
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 target_link_libraries(block_detection_lib
     opencv_local_lib
@@ -209,8 +221,34 @@ target_link_libraries(block_detection_lib
 
 
 # Add gtests
-catkin_add_gtest(gtest_manual_labeling test/gtest_manual_labeling.cpp)
-target_link_libraries(gtest_manual_labeling
-        manual_labeling_server
+
+
+
+
+catkin_add_gtest(gtest_ellipse_matching test/gtest_ellipse_matching.cpp)
+
+target_link_libraries(gtest_ellipse_matching
+        ellipse_modeling_lib
+        opencv_rot_lib
+        ${OpenCV_LIBRERIES}
+        ${catkin_LIBRARIES})
+
+
+
+# Add rostests
+# add_rostest_gtest(rostest_manual_labeling test/rostest_manual_labeling.test test/rostest_manual_labeling.cpp)
+# target_link_libraries(rostest_manual_labeling manual_labeling_server ${catkin_LIBRARIES})
+# catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
+# target_link_libraries(gtest_manual_labeling
+#        manual_labeling_server
+#        ${OpenCV_LIBRERIES}
+#        ${catkin_LIBRARIES})
+
+
+add_rostest_gtest(rostest_ellipse_matching test/rostest_ellipse_matching.test test/rostest_ellipse_matching.cpp)
+
+target_link_libraries(rostest_ellipse_matching
+        ellipse_modeling_lib
+        opencv_rot_lib
         ${OpenCV_LIBRERIES}
         ${catkin_LIBRARIES})
