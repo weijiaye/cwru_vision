@@ -198,26 +198,7 @@ target_link_libraries(block_detection_lib
 #  ${catkin_LIBRARIES}
 # )
 
-#target_link_libraries(vesselness_image_cpu
-#  vesselness_image_base
-#   ${catkin_LIBRARIES}
-# )
 
-#target_link_libraries(vesselness_image_gpu
-# vesselness_image_gpu
-# vesselness_image_filter_gpu_kernels
-#  vesselness_image_base
-#   ${CUDA_LIBRARIES}
-#   ${catkin_LIBRARIES}
-# )
-
-#target_link_libraries(vesselness_image_base
-#   ${catkin_LIBRARIES}
-# )
-
-#target_link_libraries(vesselness_image_filter_viewer_node
-#   ${catkin_LIBRARIES}
-# )
 
 
 # Add gtests
@@ -232,6 +213,15 @@ target_link_libraries(gtest_ellipse_matching
         opencv_rot_lib
         ${OpenCV_LIBRERIES}
         ${catkin_LIBRARIES})
+
+
+catkin_add_gtest(gtest_point_array_projection test/gtest_point_array_projection.cpp)
+
+
+target_link_libraries(gtest_point_array_projection
+       projective_lib
+       ${OpenCV_LIBRERIES}
+       ${catkin_LIBRARIES})
 
 
 
@@ -253,9 +243,9 @@ target_link_libraries(rostest_ellipse_matching
         ${OpenCV_LIBRERIES}
         ${catkin_LIBRARIES})
         
-add_rostest_gtest(rostest_point_array_projection test/gtest_point_array_projection.test test/point_array_projection.cpp)
+add_rostest_gtest(rostest_point_array_projection test/gtest_point_array_projection.test test/gtest_point_array_projection.cpp)
 
 target_link_libraries(rostest_point_array_projection
        projective_lib
-        ${OpenCV_LIBRERIES}
-        ${catkin_LIBRARIES})
+       ${OpenCV_LIBRERIES}
+       ${catkin_LIBRARIES})

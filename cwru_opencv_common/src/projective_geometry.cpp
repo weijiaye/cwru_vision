@@ -38,7 +38,7 @@
 
 
 
-#include "cwru_opencv_common/projective_geometry.h"
+#include <cwru_opencv_common/projective_geometry.h>
 #include <string>
 
 using namespace cv;
@@ -168,7 +168,7 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
     Mat spacialPoints = _spacialPoints.getMat();
 
     // is one dimension 3 (or 4)?
-    bool tuple3((spacialPoints.type() == CV_32FC3 && (spacialPoints.rows == 1 || spacialPoints.cols == 3) && (spacialPoints.rows == 3 || spacialPoints.cols == 1)); 
+    bool tuple3((spacialPoints.type() == CV_32FC3 && (spacialPoints.rows == 1 || spacialPoints.cols == 3) && (spacialPoints.rows == 3 || spacialPoints.cols == 1))); 
 
     /** @todo Add the CV_Asserts and necessary checks for the format of the input array. */
    	// reformat as needed.
@@ -208,50 +208,47 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
 
     // initialize the jacobian if it is needed.
     // The jacobian will rely on the SE(3) component of the transform.
+    Mat derivPt;
     if (jac.needed())
     {
-
+        derivPt = Mat::zeros(2*pointCount,3*pointCount,CV_64FC1);
     }
 
     // normalize the point in image space.
-    for (int ind(0); ind < pointCount; ind++;)
+    for (int ind(0); ind < pointCount; ind++)
     {
         imagePoints.at<double>(0,ind) = results.at<double>(0,ind)/results.at<double>(2,ind);
         imagePoints.at<double>(1,ind) = results.at<double>(1,ind)/results.at<double>(2,ind);
 
-        // if the Jacobian is required, add to it
+        // if the Jacobian is required, add to it\
+        //The jac is going to be n*2 x n*3
         if (jac.needed())
         {
+            // dx dR0
+            derivPt.at<double>(ind*2, ind*3) = 1.0;
 
+            // dx dR2
+            derivPt.at<double>(ind*2, ind*3+2) = 
+            -results.at<double>(0,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
+            
+            // dy dR1
+            derivPt.at<double>(ind*2+1, ind*3+1) = 1.0;
+
+            // dy dR2
+            derivPt.at<double>(ind*2+1, ind*3+2) = 
+            -results.at<double>(1,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
         }
     }
 
-    
-
-    
-    {
-        Mat derivPt =Mat::zeros(2,3,CV_64FC1);
-        derivPt.at<double>(0,0) = 1.0;
-        derivPt.at<double>(0,2) = -results.at<double>(0,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
-        derivPt.at<double>(1,1) = 1.0;
-        derivPt.at<double>(1,2) = -results.at<double>(1,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
-
+        
+        // @todo finish this.
         Mat dABdA,dABdB;
-        matMulDeriv(P,prjPoints,dABdA,dABdB);
+        //matMulDeriv(P,prjPoints,dABdA,dABdB);
         Mat prjDeriv = dABdB.rowRange(0,3).colRange(0,3);
         Mat prjDerivD;
         prjDeriv.convertTo(prjDerivD,CV_64FC1);
-        if(rvec.total()==3 && tvec.total()==3)
-        {
-
-            jac.create(2,9,CV_64FC1);
-            Mat jacMat = jac.getMat();
-
-            Mat fullDeriv =  derivPt*prjDeriv*transDeriv;
-            fullDeriv.copyTo(jacMat);
-        }
-        else
-        {
+      
+        /* {
             //ROS_INFO("No rvec needed for Jac");
             //ROS_INFO_STREAM(derivPt);
             //ROS_INFO_STREAM(prjDerivD);
@@ -260,84 +257,12 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
             Mat finalJac = derivPt*prjDerivD;
             finalJac.copyTo(jacMat);
         }
+        */
 
     }
-    return output;
-}
+
 
 // make this valid for multiple points.
-cv::Mat reprojectPoints(const cv::Point3d &point, const cv::Mat &P,const cv::Mat& G, cv::OutputArray jac)
-{
-
-
-    Mat prjPoints(4, 1, CV_64FC1);
-    Mat results(3, 1, CV_64FC1);
-    Mat output(2, 1, CV_64FC1);
-
-    Mat ptMat(4,1,CV_64FC1);
-    ptMat.at<double>(0,0) = point.x;
-    ptMat.at<double>(1,0) = point.y;
-    ptMat.at<double>(2,0) = point.z;
-    ptMat.at<double>(3,0) = 1.0;
-
-    Mat transJac;
-
-    if(G.total() != 16)
-    {
-        return Mat();
-    }
-    
-    if(jac.needed())
-    {
-        prjPoints = transformPointsSE3(ptMat, G, transJac)
-    }
-    else
-    {
-        prjPoints = transformPointsSE3(ptMat, G);
-    }
-    
-
-    results = P*prjPoints;
-    output.x = results.at<double>(0,0)/results.at<double>(2,0);
-    output.y = results.at<double>(1,0)/results.at<double>(2,0);
-
-    if(jac.needed())
-    {
-        Mat derivPt =Mat::zeros(2,3,CV_64FC1);
-        derivPt.at<double>(0,0) = 1.0;
-        derivPt.at<double>(0,2) = -results.at<double>(0,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
-        derivPt.at<double>(1,1) = 1.0;
-        derivPt.at<double>(1,2) = -results.at<double>(1,0)*1.0/(results.at<double>(2,0)*results.at<double>(2,0));
-
-        Mat dABdA,dABdB;
-        matMulDeriv(P,prjPoints,dABdA,dABdB);
-        Mat prjDeriv = dABdB.rowRange(0,3).colRange(0,3);
-        Mat prjDerivD;
-        prjDeriv.convertTo(prjDerivD,CV_64FC1);
-        if(rvec.total()==3 && tvec.total()==3)
-        {
-
-            jac.create(2,9,CV_64FC1);
-            Mat jacMat = jac.getMat();
-
-            Mat fullDeriv =  derivPt*prjDeriv*transDeriv;
-            fullDeriv.copyTo(jacMat);
-        }
-        else
-        {
-            //ROS_INFO("No rvec needed for Jac");
-            //ROS_INFO_STREAM(derivPt);
-            //ROS_INFO_STREAM(prjDerivD);
-            jac.create(2,3,CV_64FC1);
-            Mat jacMat = jac.getMat();
-            Mat finalJac = derivPt*prjDerivD;
-            finalJac.copyTo(jacMat);
-        }
-
-    }
-    return output;
-}
-
 void reprojectPoints(InputArray pointsIn, OutputArray pointsOut,const cv::Mat &P,const cv::Mat& rvec, const cv::Mat &tvec)
 {
 
@@ -365,7 +290,8 @@ void reprojectPoints(InputArray pointsIn, OutputArray pointsOut,const cv::Mat &P
 
     if(rvec.total()==3 && tvec.total()==3)
     {
-        prjPoints = transformPoints(pointsInMatH_,rvec,tvec);
+        // @todo Fix this
+        // prjPoints = transformPoints(pointsInMatH_,rvec,tvec); 
     }
     else
     {
@@ -833,6 +759,5 @@ Mat transformPointsSE3(const cv::Mat &points,const cv::Mat &G, cv::OutputArray j
         }
         return G*points;
 }
-
 };  // namespace cv_projective
 

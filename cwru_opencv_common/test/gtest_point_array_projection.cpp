@@ -53,13 +53,16 @@ struct pointProjectionsTest : testing::Test
     Mat P;
     Mat G;
     Mat ptList;
+    int w;
+    int h;
     int n;
-    //test object constructor
-    pointProjectionsTest(int w=5, int h=10):
-    P(3, 4, CV_64FC1),n(w*h)
-    ptList(3, n, CV_64FC1);
+    // test object constructor
+    pointProjectionsTest():
+    P(3, 4, CV_64FC1),
+    h(10), w(5), n(h*w)
     {
-    	// populate the projection Matrix:
+        ptList = Mat::zeros(3, n, CV_64FC1);
+        // populate the projection Matrix:
     	P.setTo(0.0);
     	P.at<double>(0, 0) = 1000.0;
     	P.at<double>(1, 1) = 1000.0;
@@ -84,7 +87,9 @@ struct pointProjectionsTest : testing::Test
           }
     }
 
-    ~pointProjectionsTest() {
+    };
+    ~pointProjectionsTest()
+    {
     }
 };
 
@@ -102,9 +107,9 @@ TEST_F(pointProjectionsTest, testSE3Jac)
     ptList.copyTo(ptList_o.rowRange(0,3));
     
   
-    Mat ptList_c(transformPointsSE3(ptList_o, G, jacSE3));
+    Mat ptList_c(cv_projective::transformPointsSE3(ptList_o, G, jacSE3));
     // output the results of the projection:
-    std::cout << "The result of the transform is: " < std::endl;
+    std::cout << "The result of the transform is: " << std::endl;
     std::cout << ptList_c << std::endl;
     
     // output the jacobian matrix:
@@ -114,7 +119,6 @@ TEST_F(pointProjectionsTest, testSE3Jac)
     
     ASSERT_TRUE(true);
 	}
-}
 
 /* TEST_F(ellipseMatchingTest, testEllipseMatchingSmallResults)
 {

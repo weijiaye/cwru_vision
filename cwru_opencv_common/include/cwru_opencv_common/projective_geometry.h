@@ -97,7 +97,7 @@ void reprojectPoints(cv::InputArray spacialPoints, cv::OutputArray imagePoints, 
  * 
  * Note, the current input is expected to be a  3 x n CV_64FC1 matrix where n is the number of points.
  */ 
-void reprojectPoints(cv::InputArray spacialPoints, cv::OutputArray imagePoints, const cv::Mat &P, const cv::Mat &, cv::OutputArray = cv::noArray())
+void reprojectPoints(cv::InputArray spacialPoints, cv::OutputArray imagePoints, const cv::Mat &P, const cv::Mat &, cv::OutputArray = cv::noArray());
 
 
 
@@ -141,24 +141,31 @@ void deprojectStereoPoints(const std::vector < cv_local::stereoCorrespondence > 
  * @brief compute the transform G, based on rvect, and tvect, along with an optional output jacobian.
  * 
  */
-void transformJacobian(const cv::Mat &rvect ,const cv::Mat & tvect, cv::Mat & trans , cv::OutputArray trans_jac=cv::noArray());
+void transformJacobian(const cv::Mat &rvect ,const cv::Mat & tvect, cv::Mat & trans , cv::OutputArray trans_jac = cv::noArray());
 
 /**
  * @brief compute the rvec and the tvec, given the transform matrix G.
  * 
  */
-void computeRvecTvec(const cv::Mat & trans, cv::Mat & rvect, cv::Mat & tvect, cv::OutputArray trans_jac=cv::noArray());
+void computeRvecTvec(const cv::Mat & trans, cv::Mat & rvect, cv::Mat & tvect, cv::OutputArray trans_jac = cv::noArray());
 
 
 /**
  * @brief transforms points from 1 frame to another using rvec and tvec.
  */
-cv::Mat transformPoints(const cv::Mat &points,const cv::Mat& rvec, const cv::Mat &tvec, cv::OutputArray jac =cv::noArray());
+cv::Mat transformPoints(const cv::Mat &points,const cv::Mat& rvec, const cv::Mat &tvec, cv::OutputArray jac = cv::noArray());
 
 /**
  * @brief deprojects the endpoints of 2 ellipses
  */
 void deprojectEllipseEnds(const cv_local::rotatedRectStereoCorr &, cv::Point3d & , cv::Point3d & , const cv::Mat & , const cv::Mat &);
+
+/**
+ * @brief transform a 4xn matrix of RP3 points using a 4x4 mat G (option jacobian output)
+ */
+cv::Mat transformPointsSE3(const cv::Mat &,const cv::Mat &, cv::OutputArray = cv::noArray());
+
+
 
 };
 
