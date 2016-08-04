@@ -170,13 +170,14 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
     // is one dimension 3 (or 4)?
     bool tuple3((spacialPoints.type() == CV_32FC3 && (spacialPoints.rows == 1 || spacialPoints.cols == 3) && (spacialPoints.rows == 3 || spacialPoints.cols == 1)); 
 
-    /** @todo Add the CV_Asserts and necessary checks for the format of the code. */
+    /** @todo Add the CV_Asserts and necessary checks for the format of the input array. */
+   	// reformat as needed.
 
 
     // Resize the spatial point so that they are members of RP3
     Mat spacialPointsRP3(4, spacialPoints.cols, CV_32FC1);
 
-    // scope the temporary variables
+    // scope the temporary variables that are only used to project R3 to RP3
     {
         spacialPointsRP3.setTo(1.0);
         Mat subMat(spacialPointsRP3.rowRange(0, 3));
@@ -184,11 +185,12 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
     }
 
 
-
-    // convert the points into the camera frame.
+    // convert the points from image frame into the camera frame.
+    // i.e. 4 x n to 4 x n
     Mat transJac, cameraPoints;
     if (jac.needed())
     {
+        // if transJac is needed, it will be 3 x n x 12
         cameraPoints = transformPointsSE3(spacialPoints, G, transJac);
     }
     else
@@ -291,7 +293,7 @@ cv::Mat reprojectPoints(const cv::Point3d &point, const cv::Mat &P,const cv::Mat
     }
     else
     {
-        prjPoints = transformPoints(ptMat,rvec,tvec);
+        prjPoints = transformPointsSE3(ptMat, G);
     }
     
 
@@ -803,30 +805,32 @@ Mat transformPointsSE3(const cv::Mat &points,const cv::Mat &G, cv::OutputArray j
         CV_Assert(points.depth() == CV_32F || points.depth() == CV_64F);
         CV_Assert(points.cols > 0 && points.rows == 4);
         CV_Assert(G.cols == 4 && G.rows == 4);
+        //This is an n point transform. (i.e. points is a 4 x n matrix).
         if(jac.needed())
         {
 
+        	int n(points.cols);
             Mat transformJac;
             Mat dABdA,dABdB;
             matMulDeriv(G,points,dABdA,dABdB); 
-            //dABdA is 4x16 because it ignores the fact that the last 4 numbers (last row) of G is a constant. and the last number of a point is a constant
-            //dABdB is 4x4.
-            //The full jacobian must be 3x9
-            // [ d (transform points) / d points , d (transform points) / d rvec , d (transform points) / d tvec ]^T
-            // [ 3 x 3 , 3 x 3 , 3x3 ]^T
+            // dABdA is (4*n)x(16) because it ignores the fact that the last 4 numbers (last row) of G is a constant. and the last number of a point in RP3 is a constant.
+            // dABdB is (4*n)x(4*n). This is unused
+            // The output jacobian must be (3*n)x(12)
+            
 
-            jac.create(3 , 9, CV_64FC1);
+            // obtain the correct submatrix. 
+            // This should really be a tensor...
+            jac.create(3*n, 12, CV_64FC1);
             Mat jacMat = jac.getMat();
-            Mat pointDerivative = dABdB.rowRange(0,3).colRange(0,3);
-            Mat jacPoint = jacMat.colRange(0,3);
 
-            pointDerivative.copyTo(jacPoint);
-
-            Mat transDerivative = dABdA.colRange(0,12).rowRange(0,3)*transformJac;
-            Mat jacTrans = jacMat.colRange(3,9);
-            transDerivative.copyTo(jacTrans);
+            // use ROI's to cut off the matrix accordingly.
+            for (int ind(0); ind < n; ind++)
+            {
+            	Mat DptdG(dABdA.rowRange(0, 3).colRange(0, 12));
+            	Mat jacMatPt(jacMat.rowRange(ind*3, ind*3+3));
+            	DptdG.copyTo(jacMatPt);
+            }
         }
-
         return G*points;
 }
 
