@@ -282,7 +282,8 @@ TEST_F(ellipseMatchingTest, testEllipseMatchingImage)
 
     cv::namedWindow("circle image", cv::WINDOW_AUTOSIZE);
     cv::imshow("circle image", test_image);
-    cv::waitKey(0);
+    // to avoid test hangs, wait for 10 seconds.
+    cv::waitKey(10000);
     cv::destroyWindow("circle image");
     ASSERT_TRUE(true);
 }
