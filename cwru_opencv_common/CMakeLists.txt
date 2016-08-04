@@ -255,8 +255,7 @@ target_link_libraries(rostest_ellipse_matching
         
 add_rostest_gtest(rostest_point_array_projection test/gtest_point_array_projection.test test/point_array_projection.cpp)
 
-target_link_libraries(rostest_ellipse_matching
-        ellipse_modeling_lib
-        opencv_rot_lib
+target_link_libraries(rostest_point_array_projection
+       projective_lib
         ${OpenCV_LIBRERIES}
         ${catkin_LIBRARIES})
