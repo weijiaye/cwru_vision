@@ -59,7 +59,7 @@ struct pointProjectionsTest : testing::Test
     // test object constructor
     pointProjectionsTest():
     P(3, 4, CV_64FC1),
-    h(10), w(5), n(h*w)
+    h(3), w(3), n(h*w)
     {
         ptList = Mat::zeros(3, n, CV_64FC1);
         // populate the projection Matrix:
@@ -72,7 +72,7 @@ struct pointProjectionsTest : testing::Test
 
       //create the SE(3) matrix. 
         G = Mat::eye(4, 4, CV_64FC1);
-        G.at<double>(3, 4) = 100.0;
+        G.at<double>(2, 3) = 100.0;
       
       double wD(10.0), hD(10.0), wO(-25.0), hO(-50.0);
       ptList.setTo(0);
@@ -105,7 +105,12 @@ TEST_F(pointProjectionsTest, testSE3Jac)
     
     ptList_o.setTo(1.0);
     ptList.copyTo(ptList_o.rowRange(0,3));
+
+    std::cout << "The original points are:\n";
+    std::cout << ptList << std::endl;
     
+    std::cout << "The SE(3) matrix is:\n";
+    std::cout << G << std::endl;
   
     Mat ptList_c(cv_projective::transformPointsSE3(ptList_o, G, jacSE3));
     // output the results of the projection:
@@ -116,7 +121,23 @@ TEST_F(pointProjectionsTest, testSE3Jac)
     std::cout << "The jacobian matrix is" << std::endl;
     std::cout << jacSE3 << std::endl;
     
+    // verify the translational jacobian:
     
+    Mat dG = Mat::zeros(12,1, CV_64FC1);
+
+    // dx
+    dG.at<double>(3, 0) = 18.0;
+
+    // dy
+    dG.at<double>(7, 0) = -13.0;
+
+    // dz
+    dG.at<double>(11, 0) = 6.0;
+
+    Mat dPt(jacSE3*dG);
+
+    std::cout << dPt << std::endl;
+
     ASSERT_TRUE(true);
 	}
 

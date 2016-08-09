@@ -39,21 +39,7 @@ public:
 
 protected:
 
-    /**
-     * \brief Grow blob from seed
-     */
-    int growFromSeedRaw(const cv::Mat& rawImage, cv::Mat& labeledImage, cv::Point2i seedPoint);
-
-    /**
-     * \brief Grow from seed
-     */
-    int growFromSeed(const cv::Mat& segmentedImage, cv::Mat& labeledImage, cv::Point2i seedPoint);
-
-    /**
-     * \brief Flood fill segmentation
-     */
-    int catheterFloodFillSegmentation(const cv::Mat & inputImage, cv::Mat &outputImage, cv::Point2i seedPoint, cv::Rect regionIn);
-
+ 
     /**
      * \brief ROS node handle
      */

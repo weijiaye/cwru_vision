@@ -12,7 +12,3 @@ sensor_msgs/Image imageQuery
 
 #list of response points:
 geometry_msgs/Polygon pointsResp
-
-
-#labeled image response
-sensor_msgs/Image imageResp

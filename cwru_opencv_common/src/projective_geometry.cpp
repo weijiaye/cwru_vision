@@ -738,7 +738,7 @@ Mat transformPointsSE3(const cv::Mat &points,const cv::Mat &G, cv::OutputArray j
         	int n(points.cols);
             Mat transformJac;
             Mat dABdA,dABdB;
-            matMulDeriv(G,points,dABdA,dABdB); 
+            matMulDeriv(G, points, dABdA, dABdB); 
             // dABdA is (4*n)x(16) because it ignores the fact that the last 4 numbers (last row) of G is a constant. and the last number of a point in RP3 is a constant.
             // dABdB is (4*n)x(4*n). This is unused
             // The output jacobian must be (3*n)x(12)
@@ -749,13 +749,25 @@ Mat transformPointsSE3(const cv::Mat &points,const cv::Mat &G, cv::OutputArray j
             jac.create(3*n, 12, CV_64FC1);
             Mat jacMat = jac.getMat();
 
-            // use ROI's to cut off the matrix accordingly.
             for (int ind(0); ind < n; ind++)
             {
-            	Mat DptdG(dABdA.rowRange(0, 3).colRange(0, 12));
-            	Mat jacMatPt(jacMat.rowRange(ind*3, ind*3+3));
-            	DptdG.copyTo(jacMatPt);
+                // use ROI's to cut off the matrix accordingly.
+                Mat DptdG1(dABdA.row(ind).colRange(0, 12));
+                Mat DptdG2(dABdA.row(ind+n).colRange(0, 12));
+                Mat DptdG3(dABdA.row(ind+2*n).colRange(0, 12));
+                
+                Mat subJac1(jacMat.row(ind*3).colRange(0, 12));
+                Mat subJac2(jacMat.row(ind*3+1).colRange(0, 12));
+                Mat subJac3(jacMat.row(ind*3+2).colRange(0, 12));
+                
+                DptdG1.copyTo(subJac1);
+                DptdG2.copyTo(subJac2);
+                DptdG3.copyTo(subJac3);
+
+                
+
             }
+            
         }
         return G*points;
 }

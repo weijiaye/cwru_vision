@@ -114,52 +114,14 @@ target_link_libraries(projective_lib
    ${catkin_LIBRARIES}
  )
 
-#catkin_package(
-#    INCLUDE_DIRS include
-#    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib
-#    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
-    #   DEPENDS system_lib
-    #)
 
+ADD_EXECUTABLE(manual_labeling node/manual_labeling_node.cpp)
 
-#SET(CUDA_NVCC_FLAGS "-arch=sm_13" CACHE STRING "nvcc flags" FORCE)
-#SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
-#SET(LIB_TYPE STATIC) 
-
-
-#include_directories(
-#  include
-#  ${catkin_INCLUDE_DIRS}
-#)
-
-
-#CUDA_ADD_LIBRARY(vesselness_image_filter_gpu_kernels src/gpu_src/vesselness_image_filter_kernels.cu)
-#CUDA_ADD_LIBRARY(vesselness_image_gpu src/gpu_src/vesselness_image_filter_gpu.cu)
-
-
-
-#add_library(dummy_lib
-#    src/dummylib.cpp
-#)
-
-#add_library(catadioptric_calibration_lib
-    #   src/catadioptric_calibration.cpp
-   # )
-
-#add_library(catheter_driver_lib
-    #   src/catheter_driver.cpp
-   # )
-
-#add_library(catheter_import_lib
-#   src/catheter_image_import.cpp
-# )
-
-
-#cuda_add_library( 
-
-#add_library(vesselness_image_filter
-#   src/${PROJECT_NAME}/src/vesselness_image_filter.cpp
-# )
+TARGET_LINK_LIBRARIES(manual_labeling
+    manual_labeling_server
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 
 
@@ -189,14 +151,6 @@ target_link_libraries(block_detection_lib
 )
 
 
-#target_link_libraries(vesselness_image_filter_gpu_node
-#   vesselness_image_base
-#  vesselness_image_gpu
-#  vesselness_image_filter_gpu_kernels
-#  ${CUDA_LIBRARIES}
-#  ${OpenCV_LIBRARIES}
-#  ${catkin_LIBRARIES}
-# )
 
 
 
