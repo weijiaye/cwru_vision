@@ -5,9 +5,6 @@
 #Number of requested points.
 int32 requestedPoints
 
-# image that needs to be labeled.
-sensor_msgs/Image imageQuery
-
 ---
 
 #list of response points:

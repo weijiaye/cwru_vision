@@ -20,7 +20,7 @@ int main(int argc, char** argv)
 
     manualLabeling = new ManualLabeling(nodeHandle);
 
-    while (ros::ok()) {}
+    ros::spin();
 
     delete manualLabeling;
     return 1;

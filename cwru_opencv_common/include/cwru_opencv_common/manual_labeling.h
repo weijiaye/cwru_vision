@@ -12,7 +12,7 @@
 #include <cwru_opencv_common/opencv_ui.h>
 #include <cv_bridge/cv_bridge.h>
 #include <cwru_opencv_common/image_label.h>
-#include <gtest/gtest.h>
+#include <image_transport/image_transport.h>
 
 /**
  * \brief This class is a manual labeling server.
@@ -37,6 +37,12 @@ public:
     bool manualLabelingCallback(cwru_opencv_common::image_label::Request& request,
                                 cwru_opencv_common::image_label::Response& response);
 
+
+    /**
+     * \brief image subscription callback.
+     */
+    void newImageCallback(const sensor_msgs::ImageConstPtr& msg);
+
 protected:
 
  
@@ -50,6 +56,29 @@ protected:
      */
     ros::ServiceServer manualLabelingServer_;
 
+    /**
+     * \brief image transport object.
+     */
+    image_transport::ImageTransport it;
+
+    /**
+     * \brief local image def.
+     */
+    cv::Mat localImage;
+
+
+    /**
+     * \brief image point
+     */
+    cv::Point imagePt;
+
+    /**
+     * \brief is an image ready
+     */
+    bool imageRdy;
+
+
+    image_transport::Subscriber img_sub;
 };
 
-#endif //CWRU_OPENCV_COMMON_MANUAL_LABELING_H
+#endif // CWRU_OPENCV_COMMON_MANUAL_LABELING_H
