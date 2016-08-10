@@ -173,17 +173,26 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
     /** @todo Add the CV_Asserts and necessary checks for the format of the input array. */
    	// reformat as needed.
 
+    Mat spacialPointsA(Mat(spacialPoints.t()).reshape(1).t());
+
+    
 
     // Resize the spatial point so that they are members of RP3
-    Mat spacialPointsRP3(4, spacialPoints.cols, CV_32FC1);
+    Mat spacialPointsRP3(4, spacialPointsA.cols, CV_64FC1);
 
     // scope the temporary variables that are only used to project R3 to RP3
     {
+        Mat spacialPointsA64;
+        spacialPointsA.convertTo(spacialPointsA64,CV_64F);
         spacialPointsRP3.setTo(1.0);
         Mat subMat(spacialPointsRP3.rowRange(0, 3));
-        spacialPoints.copyTo(spacialPointsRP3);
+        spacialPointsA64.copyTo(subMat);
     }
 
+
+    
+
+    
 
     // convert the points from image frame into the camera frame.
     // i.e. 4 x n to 4 x n
@@ -191,12 +200,13 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
     if (jac.needed())
     {
         // if transJac is needed, it will be 3 x n x 12
-        cameraPoints = transformPointsSE3(spacialPoints, G, transJac);
+        cameraPoints = transformPointsSE3(spacialPointsRP3, G, transJac);
     }
     else
     {
-        cameraPoints = transformPointsSE3(spacialPoints, G);
+        cameraPoints = transformPointsSE3(spacialPointsRP3, G);
     }
+
 
     // project the points into the image frame.
     Mat results(P*cameraPoints);
@@ -240,13 +250,13 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
         }
     }
 
-        
+                
         // @todo finish this.
-        Mat dABdA,dABdB;
+        //Mat dABdA,dABdB;
         //matMulDeriv(P,prjPoints,dABdA,dABdB);
-        Mat prjDeriv = dABdB.rowRange(0,3).colRange(0,3);
-        Mat prjDerivD;
-        prjDeriv.convertTo(prjDerivD,CV_64FC1);
+        //Mat prjDeriv = dABdB.rowRange(0,3).colRange(0,3);
+        //Mat prjDerivD;
+        //prjDeriv.convertTo(prjDerivD,CV_64FC1);
       
         /* {
             //ROS_INFO("No rvec needed for Jac");
@@ -258,7 +268,6 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
             finalJac.copyTo(jacMat);
         }
         */
-
     }
 
 

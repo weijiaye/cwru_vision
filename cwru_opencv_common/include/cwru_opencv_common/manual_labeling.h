@@ -79,6 +79,11 @@ protected:
 
 
     image_transport::Subscriber img_sub;
+
+
+    geometry_msgs::Polygon ptList;
+
+
 };
 
 #endif // CWRU_OPENCV_COMMON_MANUAL_LABELING_H

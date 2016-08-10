@@ -33,27 +33,53 @@ bool ManualLabeling::manualLabelingCallback(cwru_opencv_common::image_label::Req
 
     // Apply adaptive threshold
     // create a click window:
-    cv::Mat displayImage(localImage.clone());        
+    
     response.pointsResp.points.clear();
     int imageCount(0);
     // fill the blobs.
     // @Todo, add memory for the point selection.
+    bool oldPtList(true);
     while (true)
     {
+        cv::Mat displayImage(localImage.clone());    
+
+        for (int ind(0); ind < ptList.points.size(); ind++)
+        {
+        	cv::circle(displayImage, cv::Point(ptList.points[ind].x, ptList.points[ind].y), 7, cv::Scalar(255, 0, 0), 2);
+        }
+
         imshow("Selectable Points", displayImage);
         char keyIn = cv::waitKey(50);
         if (imagePt.x > 0)
         {
+            if (oldPtList)
+            {
+            	oldPtList = false;
+            	ptList.points.clear();
+            }
             geometry_msgs::Point32 localPt;
             localPt.x = static_cast<float> (imagePt.x);
             localPt.y = static_cast<float> (imagePt.y);
             localPt.z = 0.0;
             response.pointsResp.points.push_back(localPt);
+            ptList.points.push_back(localPt);
             imageCount++;
+            
             imagePt.x = -1;
         }
         // if the Esc key is pressed, break out.
         if (keyIn == 27 || imageCount >= request.requestedPoints) break;
+        
+        // reuse the previous point list.
+        if (keyIn == 'r' && oldPtList)
+        {
+            ROS_INFO("Re-using previous point set \n");
+            for (int ind(0); ind < ptList.points.size(); ind++)
+            {
+                response.pointsResp.points.push_back(ptList.points[ind]);
+            }
+            break;
+        }
     }
 
     ROS_INFO("Finished the acquiring the point list. \n");
