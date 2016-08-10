@@ -37,6 +37,7 @@ bool ManualLabeling::manualLabelingCallback(cwru_opencv_common::image_label::Req
     response.pointsResp.points.clear();
     int imageCount(0);
     // fill the blobs.
+    // @Todo, add memory for the point selection.
     while (true)
     {
         imshow("Selectable Points", displayImage);
@@ -56,7 +57,7 @@ bool ManualLabeling::manualLabelingCallback(cwru_opencv_common::image_label::Req
     }
 
     ROS_INFO("Finished the acquiring the point list. \n");
-    cv::Mat blank(Mat::zeros(50, 50, CV_8UC1));
+    cv::Mat blank(cv::Mat::zeros(50, 50, CV_8UC1));
     imshow("Selectable Points", blank);
     cv::waitKey(10);
     // Merge blob to label image
