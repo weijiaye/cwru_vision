@@ -2,7 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2016 Case Western Reserve University
- *    Russell C Jackson <rcj33@case.edu>
+ *    Russell Jackson <rcj33@case.edu>
  *
  *  All rights reserved.
  *
@@ -36,36 +36,11 @@
  */
 
 
- //  This file contains functions which are  meant to handle numerical ellipse optimization.
 
+ /*
+  * This file is meant to handle an opencv stereo image class
+  */
 
-namespace cv_ellipse_num
-{
-
-/*
- * @brief ellipseEnergy computes the energy functional of the alignment between the rotated rect & the ellipse.
- * 
- * @param cv::Mat &: The input image (assumed to be a single channel image)
- * @param cv::Mat &: The 3x4 camera projection matrix.
- * @param cv::Mat &: The transform matrix between the circle frame and the
- * @param cv::Point3d &:  The circle center in (R^3) (The normal is implicitly [0, 0, 1]^T)
- * @param double:   The circle radius.
- * @param int   : the number of circle segments.
- */
-double circleEnergy(const cv::Mat &, const cv::Mat &, const cv::Mat &, const cv::Point3d &, double, int = 10, cv::OutputArray = cv::noArray());
-
-
-/*
- * @brief projectCirclePoints 
- * 
- * @param std::vector<Point> &: The resulting list of image points (integers)
- * @param cv::Mat &: The 3x4 camera projection matrix.
- * @param cv::Mat &: The transform matrix between the circle frame and the
- * @param cv::Point3d &:  The circle center in (R^3) (The normal is implicitly [0, 0, 1]^T)
- * @param double:   The circle radius.
- * 
- * @return the ROI which encompasses the list of points.
- */
-cv::Rect projectCirclePoints(std::vector<cv::Point> &, const cv::Mat &, const cv::Mat &, const cv::Point3d &, double rad, int = 10);
-
-};  // namespace cv_ellipse_num
+  /*
+   * @TODO: everything
+   */

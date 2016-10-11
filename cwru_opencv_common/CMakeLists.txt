@@ -33,7 +33,7 @@ generate_messages(
 
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib projective_lib opencv_3d_lib opencv_2d_lib opencv_local_lib opencv_rot_lib color_model_lib
+    LIBRARIES opencv_ui_lib circle_detection_lib block_detection_lib grab_cut_lib projective_lib opencv_3d_lib opencv_2d_lib opencv_local_lib opencv_rot_lib color_model_lib ellipse_modeling_lib
     CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
     DEPENDS OpenCV
 )
@@ -158,6 +158,12 @@ target_link_libraries(block_detection_lib
 # Add gtests
 
 
+catkin_add_gtest(gtest_cv_rotations test/gtest_cv_rotations.cpp)
+
+target_link_libraries(gtest_cv_rotations
+        opencv_rot_lib
+        ${OpenCV_LIBRERIES}
+        ${catkin_LIBRARIES})
 
 
 catkin_add_gtest(gtest_ellipse_matching test/gtest_ellipse_matching.cpp)
@@ -178,28 +184,11 @@ target_link_libraries(gtest_point_array_projection
        ${catkin_LIBRARIES})
 
 
-
-# Add rostests
-# add_rostest_gtest(rostest_manual_labeling test/rostest_manual_labeling.test test/rostest_manual_labeling.cpp)
-# target_link_libraries(rostest_manual_labeling manual_labeling_server ${catkin_LIBRARIES})
-# catkin_add_gtest(gtest_manual_labeling test/rostest_manual_labeling.test test/gtest_manual_labeling.cpp)
-# target_link_libraries(gtest_manual_labeling
-#        manual_labeling_server
-#        ${OpenCV_LIBRERIES}
-#        ${catkin_LIBRARIES})
-
-
-add_rostest_gtest(rostest_ellipse_matching test/rostest_ellipse_matching.test test/rostest_ellipse_matching.cpp)
-
-target_link_libraries(rostest_ellipse_matching
-        ellipse_modeling_lib
-        opencv_rot_lib
-        ${OpenCV_LIBRERIES}
-        ${catkin_LIBRARIES})
+#Add rostesting
         
-add_rostest_gtest(rostest_point_array_projection test/gtest_point_array_projection.test test/gtest_point_array_projection.cpp)
+#add_rostest_gtest(rostest_point_array_projection test/gtest_point_array_projection.test test/gtest_point_array_projection.cpp)
 
-target_link_libraries(rostest_point_array_projection
-       projective_lib
-       ${OpenCV_LIBRERIES}
-       ${catkin_LIBRARIES})
+#target_link_libraries(rostest_point_array_projection
+#      projective_lib
+#      ${OpenCV_LIBRERIES}
+#      ${catkin_LIBRARIES})

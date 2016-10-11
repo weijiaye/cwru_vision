@@ -84,6 +84,15 @@ struct Quaternion{
 		return data[index];
 	}
 	Quaternion() {}
+
+	Quaternion(const Quaternion& q_)
+	{
+		for (int i(0); i < 4; i++)
+		{
+			data[i] = q_.data[i];
+		}
+	}
+
 	Quaternion log() const
 	{	
 		///* log(q) =  log(q0)* + v/||v||*arccos( q0/||v|| )*///
@@ -165,11 +174,11 @@ struct Quaternion{
 	}
 	double length() const
 	{
-		return (float) sqrt(data[0]*data[0] + data[1]*data[1] + data[2]*data[2] + data[3]*data[3]); 
+		return sqrt(data[0]*data[0] + data[1]*data[1] + data[2]*data[2] + data[3]*data[3]); 
 	}
 	double length_squared() const
 	{
-		return (float)(data[0]*data[0] + data[1]*data[1] + data[2]*data[2] + data[3]*data[3]); 
+		return (data[0]*data[0] + data[1]*data[1] + data[2]*data[2] + data[3]*data[3]); 
 	}
 	const Quaternion operator /(double scale) const
 	{
@@ -292,7 +301,7 @@ Quaternion MatrixToQuat(cv::Mat& matInput); //The matrix should either be a 3x3 
 	//The matrix will be confirmed to be in SO(3)
 
 
-cv::Mat QuatToMatrix(Quaternion);
+cv::Mat QuatToMatrix(Quaternion, cv::OutputArray = cv::noArray());
 
 Quaternion EulerXYZToQuat(cv::Point3d inputEXYZ);
 cv::Point3d MatrixToEulerXYZ(cv::Mat inputMat);

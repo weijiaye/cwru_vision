@@ -1,0 +1,4 @@
+# ignore the latex output.
+*.pdf
+*.bbl
+*.log

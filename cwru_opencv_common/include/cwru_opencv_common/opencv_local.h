@@ -169,7 +169,126 @@ struct objectCircles3d
     std::vector<cv::Scalar> colorList;
 };
 
+enum listOrigin {UpperLeft = 0, LowerLeft = 1,  UpperRight = 2, LowerRight  = 3};
 
+enum XY {X = 0, Y = 1};
+
+//This function helps sort the points by their y positions.
+// these functions are type agnostic,
+template<typename _Tp> bool pointYSortingHL(const cv::Point_<_Tp> &A,const  cv::Point_<_Tp> & B)
+{
+    if(A.y > B.y) return true;
+    else return false;
+}
+
+template<typename _Tp> bool pointYSortingLH(const  cv::Point_<_Tp> &A, const  cv::Point_<_Tp> & B)
+{
+    if(A.y < B.y) return true;
+    else return false;
+}
+
+template<typename _Tp> bool pointXSortingHL(const  cv::Point_<_Tp> &A, const cv::Point_<_Tp> & B)
+{
+    if(A.x > B.x) return true;
+    else return false;
+}
+
+template<typename _Tp> bool pointXSortingLH(const cv::Point_<_Tp> &A, const cv::Point_<_Tp> & B)
+{
+    if(A.x < B.x) return true;
+    else return false;
+}
+
+/*
+ * @brief std::vector<cv::Point> sortPoints2d(std::vector<cv::Point2d> &, const cv::Size &, const listOrigin = UpperLeft, enum XY = X,  bool filledIn = true)
+ * 
+ * The purpose of this function is to take a list of a points and sort them according to a grid. (This starts from the origin and is iterated based on the input parameters)
+ * In the first iteration, the expectation is that the grid is largely aligned to the camera where width is mostly in the x dir. and height is mostly in the y dir.
+ * This will make incomplete data processing easier.
+ */
+template<typename _Tp> int sortPoints2d(std::vector< cv::Point_<_Tp> > &pointArray, const cv::Size &gridSize, listOrigin LO = UpperLeft , XY dir = X,  bool filledIn = true)
+{
+    /* The purpose of this function is to take a list of a points and sort them according to a grid. (This starts from the origin and is iterated based on the input parameters)
+     * In the first iteration, the expectation is that the grid is largely aligned to the camera where width is mostly in the x dir. and height is mostly in the y dir.
+     * This will make incomplete data processing easier.
+     */
+    // void sortPtGrid(std::vector<Point2f> &pointArray,Size gridSize,bool lr)
+
+    // verify that the right number of points are passed in:
+    int expSize(gridSize.width * gridSize.height);
+
+    int outputResult(3);
+
+    if( expSize > pointArray.size())
+    {
+        return 1;
+    }
+    if( expSize < pointArray.size())
+    {
+        outputResult = 2;
+    }
+
+    // @TODO assign function handles here (based on origin and dir)
+    // also determine increment size. (based on filled in)
+    bool (*ySort)(const cv::Point_<_Tp> &, const cv::Point_<_Tp> &);
+    bool (*xSort)(const cv::Point_<_Tp> &, const cv::Point_<_Tp> &);
+
+    if ((LO % 2) == 0 )
+    {
+        ySort = &pointYSortingLH;
+    }
+    else ySort = &pointYSortingHL;
+
+
+    
+    
+
+    if ((LO >> 1) == 1)
+    {
+        xSort = &pointXSortingLH;
+    }
+    else
+    {
+        xSort = &pointXSortingHL;
+    }
+
+    bool (*sort1)(const cv::Point_<_Tp> &, const cv::Point_<_Tp> & );
+    bool (*sort2)(const cv::Point_<_Tp> &, const cv::Point_<_Tp> & );
+
+    if (dir == X)
+    {
+        sort1 = ySort;
+        sort2 = xSort;
+    }
+    else
+    {
+        sort1 = xSort;
+        sort2 = ySort;
+    }
+
+    sort(pointArray.begin(), pointArray.end(), sort1);
+
+    for (int i = 0; i < gridSize.height; i++)
+    {
+        if (i*gridSize.width > pointArray.size())
+        {
+            break; //escape the loop
+        }
+        
+        if ((i+1)*gridSize.width >= pointArray.size())
+        {
+            sort(pointArray.begin()+i*gridSize.width,pointArray.end(),sort2);    
+        }
+        else
+        {
+            sort(pointArray.begin()+i*gridSize.width, pointArray.begin()+(i+1)*gridSize.width, sort2);
+        }
+    }
+        
+
+    return outputResult;
+
+}
 
 //  This function compute the error in hue
 int byteError(int, int);
@@ -188,6 +307,9 @@ bool contourCompare(std::vector< cv::Point> contour1, std::vector<cv::Point> con
 
 
 int countOutputChannels(int);
+
+
+
 
 };  //  cv_local
 

@@ -17,23 +17,92 @@ Eigen  (?????)
 #include "cwru_opencv_common/cv_rotations.h"
 #include <math.h> 
 #include <iostream> 
-//using namespace cv;
+
+
 namespace cv_rot
 {
 
-cv::Mat QuatToMatrix(Quaternion inputQ){
+cv::Mat QuatToMatrix(Quaternion inputQ, cv::OutputArray jac){
 	Quaternion inputQn = QuatNormalize(inputQ);
 	//cv::Mat_<double> outputM = cv::Mat::zeros(3,3,CV_32F);
 	cv::Mat outputM = cv::Mat::zeros(3,3,CV_64FC1);
-	outputM.at<double>(0,0) = (double) pow(inputQn.data[0],2) + pow(inputQn.data[1],2) - pow(inputQn.data[2],2) - pow(inputQn.data[3],2);	
-	outputM.at<double>(1,0) = (double) 2*(inputQn.data[1]*inputQn.data[2] + inputQn.data[0]*inputQn.data[3]);
-	outputM.at<double>(2,0) = (double) 2*(inputQn.data[1]*inputQn.data[3] - inputQn.data[0]*inputQn.data[2]);
-	outputM.at<double>(0,1) = (double) 2*(inputQn.data[1]*inputQn.data[2] - inputQn.data[0]*inputQn.data[3]);
-	outputM.at<double>(1,1) = (double) pow(inputQn.data[0],2) - pow(inputQn.data[1],2) + pow(inputQn.data[2],2) - pow(inputQn.data[3],2);
-	outputM.at<double>(2,1) = (double) 2*(inputQn.data[2]*inputQn.data[3] + inputQn.data[0]*inputQn.data[1]);
-	outputM.at<double>(0,2) = (double) 2*(inputQn.data[1]*inputQn.data[3] + inputQn.data[0]*inputQn.data[2]);
-	outputM.at<double>(1,2) = (double) 2*(inputQn.data[2]*inputQn.data[3] - inputQn.data[0]*inputQn.data[1]);
-	outputM.at<double>(2,2) = (double) pow(inputQn.data[0],2) - pow(inputQn.data[1],2) - pow(inputQn.data[2],2) + pow(inputQn.data[3],2);
+	outputM.at<double>(0,0) =  pow(inputQn.data[0],2) + pow(inputQn.data[1],2) - pow(inputQn.data[2],2) - pow(inputQn.data[3],2);
+	outputM.at<double>(1,0) =  2*(inputQn.data[1]*inputQn.data[2] + inputQn.data[0]*inputQn.data[3]);
+	outputM.at<double>(2,0) =  2*(inputQn.data[1]*inputQn.data[3] - inputQn.data[0]*inputQn.data[2]);
+	outputM.at<double>(0,1) =  2*(inputQn.data[1]*inputQn.data[2] - inputQn.data[0]*inputQn.data[3]);
+	outputM.at<double>(1,1) =  pow(inputQn.data[0],2) - pow(inputQn.data[1],2) + pow(inputQn.data[2],2) - pow(inputQn.data[3],2);
+	outputM.at<double>(2,1) =  2*(inputQn.data[2]*inputQn.data[3] + inputQn.data[0]*inputQn.data[1]);
+	outputM.at<double>(0,2) =  2*(inputQn.data[1]*inputQn.data[3] + inputQn.data[0]*inputQn.data[2]);
+	outputM.at<double>(1,2) =  2*(inputQn.data[2]*inputQn.data[3] - inputQn.data[0]*inputQn.data[1]);
+	outputM.at<double>(2,2) =  pow(inputQn.data[0],2) - pow(inputQn.data[1],2) - pow(inputQn.data[2],2) + pow(inputQn.data[3],2);
+
+	if (jac.needed())
+	{
+		// @ TODO
+		// add the output array 
+		// Please add eigen support....
+		jac.create(9, 4, CV_64FC1);
+
+		cv::Mat jacMat(jac.getMat());
+
+		jacMat = 0.0;
+
+		// zeroth row...
+		jacMat.at<double> (0, 0) = 2.0*inputQn.data[0];
+		jacMat.at<double> (0, 1) = 2.0*inputQn.data[1];
+		jacMat.at<double> (0, 2) = -2.0*inputQn.data[2];
+		jacMat.at<double> (0, 3) = -2.0*inputQn.data[3];
+
+		// first row: index (1, 0)
+		jacMat.at<double>(1, 0) = 2*(inputQn.data[3]);
+		jacMat.at<double>(1, 1) = 2*(inputQn.data[2]);
+		jacMat.at<double>(1, 2) = 2*(inputQn.data[1]);
+		jacMat.at<double>(1, 3) = 2*(inputQn.data[0]);
+
+		// second row: index (2, 0)
+		jacMat.at<double>(2, 0) =  -2*(inputQn.data[2]);
+		jacMat.at<double>(2, 1) =   2*(inputQn.data[3]);
+		jacMat.at<double>(2, 2) =  -2*(inputQn.data[0]);
+		jacMat.at<double>(2, 3) =   2*(inputQn.data[1]);
+
+		// third row: index (0, 1)
+		jacMat.at<double>(3, 0) =  -2*(inputQn.data[3]);
+		jacMat.at<double>(3, 1) =   2*(inputQn.data[2]);
+		jacMat.at<double>(3, 2) =   2*(inputQn.data[1]);
+		jacMat.at<double>(3, 3) =  -2*(inputQn.data[0]);
+
+		// fourth row: index (1, 1)
+		jacMat.at<double>(4, 0) =   2*inputQn.data[0];
+		jacMat.at<double>(4, 1) =  -2*inputQn.data[1];
+		jacMat.at<double>(4, 2) =   2*inputQn.data[2];
+		jacMat.at<double>(4, 3) =  -2*inputQn.data[3];
+
+		// fifth row: index (2, 1)
+		jacMat.at<double>(5, 0) =  2*(inputQn.data[1]);
+		jacMat.at<double>(5, 1) =  2*(inputQn.data[1]);
+		jacMat.at<double>(5, 2) =  2*(inputQn.data[3]);
+		jacMat.at<double>(5, 3) =  2*(inputQn.data[2]);
+
+		// sixth row: index (0, 2)
+		jacMat.at<double>(6, 0) =  2*(inputQn.data[2]);
+		jacMat.at<double>(6, 1) =  2*(inputQn.data[3]);
+		jacMat.at<double>(6, 2) =  2*(inputQn.data[0]);
+		jacMat.at<double>(6, 3) =  2*(inputQn.data[3]);
+
+		// seventh row: index (1, 2)
+		jacMat.at<double>(7,0) =  -2*(inputQn.data[1]);
+		jacMat.at<double>(7,1) =  -2*(inputQn.data[0]);
+		jacMat.at<double>(7,2) =   2*(inputQn.data[3]);
+		jacMat.at<double>(7,3) =   2*(inputQn.data[2]);
+
+		// eigth row: index (2, 2)
+		jacMat.at<double>(8,0) =   2*inputQn.data[0];
+		jacMat.at<double>(8,0) =  -2*inputQn.data[1];
+		jacMat.at<double>(8,0) =  -2*inputQn.data[2];
+		jacMat.at<double>(8,0) =   2*inputQn.data[3];
+
+	}
+
 	return outputM;
 };
 
@@ -130,6 +199,8 @@ Quaternion MatrixToQuat(cv::Mat& matInput){
         
         double length_quaternion = sqrt(pow(q1,2) + pow(qu,2) + pow(qv,2) + pow(qw,2));
         
+        // implicitly constrain the output quaternion angle to be between -pi/2 and pi/2.
+
         if (q1 < 0){
         	outputQ.data[0] = -q1/length_quaternion;
      	    outputQ.data[u+1] = -qu/length_quaternion;
@@ -143,8 +214,8 @@ Quaternion MatrixToQuat(cv::Mat& matInput){
      	    outputQ.data[w+1] = qw/length_quaternion;
         }
 
-
 	    matExtracted.release();
+
         return outputQ;
      }
  }
@@ -355,11 +426,21 @@ cv::Vec3d QuatRotVec(Quaternion q, cv::Vec3d v1){
 
 double QuatError(Quaternion inputQ1,Quaternion inputQ2){
 	
-
-	
 	Quaternion errorQuat =  inputQ2*inputQ1.invert();
 
-	double angleError = 2*acos(errorQuat.data[0]);
+	Quaternion Qen(QuatNormalize(errorQuat));
+
+	// the result here is between 0 and 2*pi
+	double angleError(2*acos(Qen.data[0]));
+
+	// remap to [-pi, pi].
+    if ( abs(angleError) > CV_PI)
+	{
+	    if ( abs(angleError - 2*CV_PI ) < abs(angleError))
+	    {
+            angleError -= 2*CV_PI;
+		}
+	}
 
 	return angleError;
 };

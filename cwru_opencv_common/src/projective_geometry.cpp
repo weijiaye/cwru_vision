@@ -160,7 +160,7 @@ cv::Point2d reprojectPoint(const cv::Point3d &point, const cv::Mat &P,const cv::
 }
 
 
-void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints, const cv::Mat &P, const cv::Mat &G, cv::OutputArray jac)
+void reprojectPointsSE3(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints, const cv::Mat &P, const cv::Mat &G, cv::OutputArray jac)
 {
     // verify the correct form of the spacial points and that they have the correct dimensions
 
@@ -175,8 +175,6 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
 
     Mat spacialPointsA(Mat(spacialPoints.t()).reshape(1).t());
 
-    
-
     // Resize the spatial point so that they are members of RP3
     Mat spacialPointsRP3(4, spacialPointsA.cols, CV_64FC1);
 
@@ -189,8 +187,6 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
         spacialPointsA64.copyTo(subMat);
     }
 
-
-    
 
     
 
@@ -231,7 +227,7 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
         imagePoints.at<double>(1,ind) = results.at<double>(1,ind)/results.at<double>(2,ind);
 
         // if the Jacobian is required, add to it\
-        //The jac is going to be n*2 x n*3
+        //The jac is going to be n*2 x 3*n (using the transform)
         if (jac.needed())
         {
             // dx dR0
@@ -250,8 +246,16 @@ void reprojectPoints(cv::InputArray _spacialPoints, cv::OutputArray _imagePoints
         }
     }
 
-                
-        // @todo finish this.
+    if (jac.needed())
+    {         
+        Mat jacProd = derivPt*transJac;
+        
+        jac.create(2*pointCount, 12, CV_64FC1);
+        Mat jacOut = jac.getMat();
+
+        jacProd.copyTo(jacOut);
+    }
+            // @todo finish this.
         //Mat dABdA,dABdB;
         //matMulDeriv(P,prjPoints,dABdA,dABdB);
         //Mat prjDeriv = dABdB.rowRange(0,3).colRange(0,3);
@@ -300,7 +304,7 @@ void reprojectPoints(InputArray pointsIn, OutputArray pointsOut,const cv::Mat &P
     if(rvec.total()==3 && tvec.total()==3)
     {
         // @todo Fix this
-        // prjPoints = transformPoints(pointsInMatH_,rvec,tvec); 
+        prjPoints = transformPoints(pointsInMatH_,rvec,tvec); 
     }
     else
     {
@@ -373,34 +377,59 @@ void reprojectPointsStereo(cv::InputArray points, std::vector < cv_local::stereo
 
 
 
-stereoCorrespondence reprojectPointTangent(const cv::Point3d &point,const cv::Point3d &pointDeriv,const Mat & P_l , const Mat & P_r )
+stereoCorrespondence reprojectPointTangent(const cv::Point3d &point, const cv::Point3d &pointDeriv,
+    const Mat & P_l, const Mat & P_r )
 {
-
     stereoCorrespondence tempDeriv;
     stereoCorrespondence tempOutput;
-    Mat ptDMat(4,2,CV_64FC1);
-    Mat dResults(3,2,CV_64FC1);
+    Mat ptDMat(4, 2, CV_64FC1);
+    Mat dResults(3, 2, CV_64FC1);
     Mat stP[2];
 
     stP[0]= P_l;
     stP[1]= P_r;
 
 
-    ptDMat.at<double>(0,0) = point.x;
-    ptDMat.at<double>(1,0) = point.y;
-    ptDMat.at<double>(2,0) = point.z;
-    ptDMat.at<double>(3,0) = 1.0;
-    ptDMat.at<double>(0,1) = pointDeriv.x;
-    ptDMat.at<double>(1,1) = pointDeriv.y;
-    ptDMat.at<double>(2,1) = pointDeriv.z;
-    ptDMat.at<double>(3,1) = 0.0; //This is a vector and not a point...
+    ptDMat.at<double>(0, 0) = point.x;
+    ptDMat.at<double>(1, 0) = point.y;
+    ptDMat.at<double>(2, 0) = point.z;
+    ptDMat.at<double>(3, 0) = 1.0;  // This is a point so it has a value of 1 at the 4th part. (projective geometry)
+    ptDMat.at<double>(0, 1) = pointDeriv.x;
+    ptDMat.at<double>(1, 1) = pointDeriv.y;
+    ptDMat.at<double>(2, 1) = pointDeriv.z;
+    ptDMat.at<double>(3, 1) = 0.0;  // This is a vector and not a point...
 
 
     for(int lr = 0; lr < 2; lr++){
         dResults = stP[lr]*ptDMat;
-        tempDeriv[lr].x = (dResults.at<double>(2,0)*dResults.at<double>(0,1)-dResults.at<double>(0,0)*dResults.at<double>(2,1))/(dResults.at<double>(2,0)*dResults.at<double>(2,0));
-        tempDeriv[lr].y = (dResults.at<double>(2,0)*dResults.at<double>(1,1)-dResults.at<double>(1,0)*dResults.at<double>(2,1))/(dResults.at<double>(2,0)*dResults.at<double>(2,0));
+        tempDeriv[lr].x = (dResults.at<double>(2, 0)*dResults.at<double>(0, 1)-dResults.at<double>(0, 0)*dResults.at<double>(2, 1))/(dResults.at<double>(2, 0)*dResults.at<double>(2, 0));
+        tempDeriv[lr].y = (dResults.at<double>(2, 0)*dResults.at<double>(1, 1)-dResults.at<double>(1, 0)*dResults.at<double>(2, 1))/(dResults.at<double>(2, 0)*dResults.at<double>(2, 0));
     }
+    return tempDeriv;
+}
+
+Point2d reprojectPointTangent(const cv::Point3d &point, const cv::Point3d &pointDeriv, const Mat & P)
+{
+    Point2d tempDeriv;
+    Mat ptDMat(4, 2, CV_64FC1);
+    Mat dResults(3, 2, CV_64FC1);
+
+    // populate the tangent matrix.
+    ptDMat.at<double>(0, 0) = point.x;
+    ptDMat.at<double>(1, 0) = point.y;
+    ptDMat.at<double>(2, 0) = point.z;
+    ptDMat.at<double>(3, 0) = 1.0;  // This is a point so it has a value of 1 at the 4th part. (projective geometry)
+    ptDMat.at<double>(0, 1) = pointDeriv.x;
+    ptDMat.at<double>(1, 1) = pointDeriv.y;
+    ptDMat.at<double>(2, 1) = pointDeriv.z;
+    ptDMat.at<double>(3, 1) = 0.0;  // This is a vector and not a point...
+
+    dResults = P*ptDMat;
+    tempDeriv.x = (dResults.at<double>(2, 0)*dResults.at<double>(0, 1)
+        -dResults.at<double>(0, 0)*dResults.at<double>(2, 1))/(dResults.at<double>(2, 0)*dResults.at<double>(2, 0));
+    tempDeriv.y = (dResults.at<double>(2,0)*dResults.at<double>(1, 1)
+    	-dResults.at<double>(1, 0)*dResults.at<double>(2, 1))/(dResults.at<double>(2, 0)*dResults.at<double>(2, 0));
+    
     return tempDeriv;
 }
 
@@ -740,17 +769,17 @@ Mat transformPointsSE3(const cv::Mat &points,const cv::Mat &G, cv::OutputArray j
         CV_Assert(points.depth() == CV_32F || points.depth() == CV_64F);
         CV_Assert(points.cols > 0 && points.rows == 4);
         CV_Assert(G.cols == 4 && G.rows == 4);
-        //This is an n point transform. (i.e. points is a 4 x n matrix).
-        if(jac.needed())
+        // This is an n point transform. (i.e. points is a 4 x n matrix).
+        if (jac.needed())
         {
-
-        	int n(points.cols);
+            int n(points.cols);
             Mat transformJac;
-            Mat dABdA,dABdB;
+            Mat dABdA, dABdB;
             matMulDeriv(G, points, dABdA, dABdB); 
             // dABdA is (4*n)x(16) because it ignores the fact that the last 4 numbers (last row) of G is a constant. and the last number of a point in RP3 is a constant.
             // dABdB is (4*n)x(4*n). This is unused
-            // The output jacobian must be (3*n)x(12)
+            // The output jacobian must be (3*n)x(12) (may technically by (3*n) x 6 since the rotation matrix derivative is in (R^3).
+
             
 
             // obtain the correct submatrix. 
@@ -764,19 +793,15 @@ Mat transformPointsSE3(const cv::Mat &points,const cv::Mat &G, cv::OutputArray j
                 Mat DptdG1(dABdA.row(ind).colRange(0, 12));
                 Mat DptdG2(dABdA.row(ind+n).colRange(0, 12));
                 Mat DptdG3(dABdA.row(ind+2*n).colRange(0, 12));
-                
+
                 Mat subJac1(jacMat.row(ind*3).colRange(0, 12));
                 Mat subJac2(jacMat.row(ind*3+1).colRange(0, 12));
                 Mat subJac3(jacMat.row(ind*3+2).colRange(0, 12));
-                
+
                 DptdG1.copyTo(subJac1);
                 DptdG2.copyTo(subJac2);
                 DptdG3.copyTo(subJac3);
-
-                
-
             }
-            
         }
         return G*points;
 }

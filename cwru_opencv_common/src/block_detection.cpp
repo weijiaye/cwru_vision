@@ -10,36 +10,12 @@
 
 #include "cwru_opencv_common/block_detection.h"
 #include <stdio.h>
-
+#include <algorithm>
 #include <ros/ros.h>
 
 using namespace cv;
 using namespace cv_local;
 
-//This function helps sort the points by their y positions.
-bool pointYSortingHL(Point2f A,Point2f B)
-{
-    if(A.y > B.y) return true;
-    else return false;
-}
-
-bool pointXSortingHL(Point2f A,Point2f B)
-{
-    if(A.x > B.x) return true;
-    else return false;
-}
-
-bool pointYSortingLH(Point2f A,Point2f B)
-{
-    if(A.y < B.y) return true;
-    else return false;
-}
-
-bool pointXSortingLH(Point2f A,Point2f B)
-{
-    if(A.x < B.x) return true;
-    else return false;
-}
 
 /*bool contourAreaSortingLH(std::vector<Point> A,std::vector<Point> B)
 {
@@ -875,11 +851,13 @@ int refineBlock(const cv::Mat& inputImg, std::vector<cv::Point2f> & points,bool 
      if(display) ROS_INFO("started refinement");
      //sort all of the y vectors from low to high
      std::vector<cv::Point2f> tempPoints = points;
-     sort(tempPoints.begin(),tempPoints.end(),pointYSortingLH);
+
+
+     std::sort(tempPoints.begin(),tempPoints.end(),cv_local::pointYSortingLH<float>);
      //first row from High to Low
-     sort(tempPoints.begin(),tempPoints.begin()+2,pointXSortingHL);
+     std::sort(tempPoints.begin(),tempPoints.begin()+2,cv_local::pointXSortingHL<float>);
      //second row from Low to High
-     sort(tempPoints.begin()+2,tempPoints.begin()+4,pointXSortingLH);
+     std::sort(tempPoints.begin()+2,tempPoints.begin()+4,cv_local::pointXSortingLH<float>);
 
      /* Point layout (rough)
          *     1      0
@@ -1120,19 +1098,7 @@ void quadrilateralBW(const Mat &inputImg, Point2f startPt, std::vector<Point> &c
 
 
 
-void sortPtGrid(std::vector<Point2f> &pointArray,Size gridSize,bool lr)
-{
-	//always 
 
-	sort(pointArray.begin(),pointArray.end(),pointYSortingLH);
-    for(int i = 0; i < gridSize.height; i++)
-	{
-		if(lr) sort(pointArray.begin()+i*gridSize.width,pointArray.begin()+(i+1)*gridSize.width,pointXSortingLH);
-		else sort(pointArray.begin()+i*gridSize.width,pointArray.begin()+(i+1)*gridSize.width,pointXSortingHL);
-	}
-		
-
-}
 
 
 
