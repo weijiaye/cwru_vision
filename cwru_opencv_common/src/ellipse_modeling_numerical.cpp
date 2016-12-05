@@ -45,7 +45,7 @@ namespace cv_ellipse_num
 {
 
 
-double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv::Point3d &center, double rad, int segments)
+double circleEnergy(const cv::Mat &segmentedImage, const cv::Mat &P, const cv::Mat &G_co, const cv::Point3d &center, double rad, int segments, cv::OutputArray jac)
 {
 	// The circle energy is maximizd when the segmented image is dark where the circle is dark and the gradient around image
 	// matches the circle's edge.
@@ -59,15 +59,60 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 	imagePts.resize(1);
 
 	Rect imageROI(projectCirclePoints(imagePts[0], P, G_co, center, rad, segments));
+
+
 	// now create a convex hull.
-
-	
-
 	Rect baseRect(Point(0, 0), segmentedImage.size());
 
-	Rect finalROI(imageROI & baseRect);
 
-	if (finalROI.area() == 0) return 0.0;
+	// @todo. the intersection may be zero.
+    Rect finalROI(imageROI & baseRect);
+
+    if (finalROI.tl().x <= 0)
+    {
+        finalROI.width -= (1 - finalROI.x);
+        finalROI.x = 1;
+        if (finalROI.width <= 0)
+        {
+            return -1.0;
+        }
+    }
+
+    if (finalROI.br().x >= segmentedImage.size().width) 
+	{
+		finalROI.width = (segmentedImage.size().width - 1 - finalROI.x); 
+		if (finalROI.width <= 0)
+		{
+			return -1.0;
+		}
+	}
+	
+	if (finalROI.tl().y <= 0) 
+	{
+		finalROI.height -= (1-finalROI.y);
+		finalROI.y = 1;
+		if (finalROI.height <= 0)
+		{
+			return -1.0;
+		}	
+	}
+
+	if (finalROI.br().y >= segmentedImage.size().height) 
+	{
+		finalROI.height = (segmentedImage.size().height - 1 - finalROI.y); 
+		if (finalROI.height <= 0)
+		{
+			return -1.0;
+		}
+	}
+
+	if (finalROI.area() <= 0)
+	{
+		//error return
+		return -1.0;
+	}
+
+
 
 	Mat edgeImage(finalROI.height, finalROI.width, CV_32FC1);
 	Mat fillImage(finalROI.height, finalROI.width, CV_32FC1);
@@ -80,6 +125,18 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 
 	
 	//get the ROI of the base image.
+	if (jac.needed())
+	{
+		finalROI -= Point(1,1);
+		finalROI += Size(2,2);
+		if (finalROI.tl().x < 0 || finalROI.tl().y < 0 || finalROI.br().x > segmentedImage.size().width || finalROI.br().y > segmentedImage.size().height)
+		{
+			std::cout << finalROI << std::endl;
+			return 0;
+		}
+		
+	}
+
 	Mat subImage(segmentedImage(finalROI));
 	
 	Mat subImagef;
@@ -107,9 +164,55 @@ double circleEnergy(const cv::Mat &segmentedImage, cv::Mat &P, cv::Mat &G_co, cv
 	Mat fillMatch;
 	matchTemplate(subImagef, fillImage, fillMatch, CV_TM_CCORR_NORMED);
 
+	float energy(0.0);
+	// compute the rms energy:
+	if ( jac.needed() )
+	{
+		//std::cout << edgeMatch.size() << std::endl;
+		energy = edgeMatch.at<float>(1,1)*edgeMatch.at<float>(1,1) + fillMatch.at<float>(1,1)*fillMatch.at<float>(1,1);
+	}
+	else
+	{
+		
+		//std::cout << edgeMatch.size() << std::endl;
+		energy = edgeMatch.at<float>(0,0)*edgeMatch.at<float>(0,0) + fillMatch.at<float>(0,0)*fillMatch.at<float>(0,0);
+	}
 
-	// compute the geometric mean:
-	float energy = sqrt(edgeMatch.at<float>(0)*edgeMatch.at<float>(0) + fillMatch.at<float>(0)*fillMatch.at<float>(0));
+	if ( jac.needed() )
+	{
+		// compute the derivative of the match w.r.t x and y
+		Mat edgeDx, edgeDy;
+		Scharr(edgeMatch, edgeDx, CV_32F, 1, 0);
+		Scharr(edgeMatch, edgeDy, CV_32F, 0, 1);
+
+		Mat fillDx, fillDy;
+		Scharr(fillMatch, fillDx, CV_32F, 1, 0);
+		Scharr(fillMatch, fillDy, CV_32F, 0, 1);
+
+		// derivative w.r.t the actual circle center.
+		Mat grad(1,2, CV_64FC1);
+		grad.at<double>(0,0) = static_cast<double> (2*edgeMatch.at<float>(1,1)*edgeDx.at<float>(1,1)+2*fillMatch.at<float>(1,1)*fillDx.at<float>(1,1));
+		grad.at<double>(0,1) = static_cast<double> (2*edgeMatch.at<float>(1,1)*edgeDy.at<float>(1,1)+2*fillMatch.at<float>(1,1)*fillDy.at<float>(1,1));
+
+		// compute the jacobian w.r.t to G_co (the 6 dof form)
+		Mat ptJac, imgPoints;
+		Mat spacialPoints(3, 1, CV_64FC1);
+		
+		spacialPoints.at<double>(0) = center.x;
+		spacialPoints.at<double>(1) = center.y;
+		spacialPoints.at<double>(2) = center.z;
+
+		cv_projective::reprojectPointsSE3(spacialPoints, imgPoints, P, G_co, ptJac);
+		
+		jac.create(1,12,CV_64FC1);
+        Mat jacMat = jac.getMat();
+
+        Mat resultJac = grad*ptJac;
+
+        resultJac.copyTo(jacMat);
+
+	}
+
 	return energy;
 }
 

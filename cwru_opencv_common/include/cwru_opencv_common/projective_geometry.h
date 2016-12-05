@@ -97,7 +97,7 @@ void reprojectPoints(cv::InputArray spacialPoints, cv::OutputArray imagePoints, 
  * 
  * Note, the current input is expected to be a  3 x n CV_64FC1 matrix where n is the number of points.
  */ 
-void reprojectPoints(cv::InputArray spacialPoints, cv::OutputArray imagePoints, const cv::Mat &P, const cv::Mat &, cv::OutputArray = cv::noArray());
+void reprojectPointsSE3(cv::InputArray spacialPoints, cv::OutputArray imagePoints, const cv::Mat &P, const cv::Mat &, cv::OutputArray = cv::noArray());
 
 
 
@@ -118,6 +118,18 @@ void reprojectPointsStereo(cv::InputArray points, cv::OutputArray points_left, c
  * @brief Projects a point tangent (in 3d) as a tangent in the stereo camera images.
  */
 cv_local::stereoCorrespondence reprojectPointTangent(const cv::Point3d &point,const cv::Point3d &pointDeriv,const cv::Mat & P_l , const cv::Mat & P_r );
+
+
+/**
+ * @brief Projects a tangent into the camera image space from 3d space.
+ *
+ * @param const cv::Point3d & the point in 3d space.
+ * @param const cv::Point3d & the tangent in 3d space.
+ * @param const cv::Mat & The camera projection matrix.
+ *
+ * @return cv::Point2d the equivilent tangent vector in the image space.
+ */
+cv::Point2d reprojectPointTangent(const cv::Point3d &point, const cv::Point3d &pointDeriv, const cv::Mat & P);
 
 
 /**
