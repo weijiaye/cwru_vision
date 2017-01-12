@@ -68,4 +68,18 @@ double circleEnergy(const cv::Mat &, const cv::Mat &, const cv::Mat &, const cv:
  */
 cv::Rect projectCirclePoints(std::vector<cv::Point> &, const cv::Mat &, const cv::Mat &, const cv::Point3d &, double rad, int = 10);
 
+
+/**
+ * @brief deprojectEllipseEnds deproject the endpoints of the ellipse
+ * 
+ * @param cv_local::rotatedRectStereoCorr &: The ellipse information
+ * @param cv::Point3d &: The 3x4 camera projection matrix.
+ * @param cv::Mat &: The transform matrix between the circle frame and the
+ * @param cv::Point3d &:  The circle center in (R^3) (The normal is implicitly [0, 0, 1]^T)
+ * @param double:   The circle radius.
+ * 
+ * @return the ROI which encompasses the list of points.
+ */
+void deprojectEllipseEnds(const cv_local::rotatedRectStereoCorr &, cv::Point3d & , cv::Point3d & , const cv::Mat & , const cv::Mat &);
+
 };  // namespace cv_ellipse_num

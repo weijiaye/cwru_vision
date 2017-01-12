@@ -377,8 +377,8 @@ void reprojectPointsStereo(cv::InputArray points, std::vector < cv_local::stereo
 
 
 
-stereoCorrespondence reprojectPointTangent(const cv::Point3d &point, const cv::Point3d &pointDeriv,
-    const Mat & P_l, const Mat & P_r )
+cv_local::stereoCorrespondence reprojectPointDerivativeStereo(const cv::Point3d &point, const cv::Point3d &pointDeriv, 
+    const cv::Mat &P_l, const cv::Mat &P_r, const cv::Mat & rvec,  const cv::Mat & tvec)
 {
     stereoCorrespondence tempDeriv;
     stereoCorrespondence tempOutput;
@@ -507,7 +507,7 @@ cv::Point3d deprojectStereoTangent(const cv_local::stereoCorrespondence &imagePo
 }
 
 
-cv::Point3d deprojectStereoPoint(const cv_local::stereoCorrespondence inputPts, const  cv::Mat &P_l , const cv::Mat &P_r)
+cv::Point3d deprojectStereoPoint(const cv_local::stereoCorrespondence& inputPts, const  cv::Mat &P_l , const cv::Mat &P_r)
 {
     //construct the output mat:
     Mat results(4,1,CV_64FC1);
