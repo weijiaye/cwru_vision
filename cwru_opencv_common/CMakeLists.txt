@@ -175,6 +175,8 @@ target_link_libraries(gtest_ellipse_matching
         ${catkin_LIBRARIES})
 
 
+# gtesting for the projective geometry library:
+
 catkin_add_gtest(gtest_point_array_projection test/gtest_point_array_projection.cpp)
 
 
