@@ -53,42 +53,88 @@ namespace cv_local
 /* Stereo Storage structs */
 
 //Storage struct for  stereo camera points
-struct stereoCorrespondence{
+
+/*
+ * @brief struct stereoCorrespondence is a stereo point pair
+ * 
+ * The purpose of this is to store a stereo correspondence for use with deprojection
+ * and reprojection.
+ * As this is a struct, it has only public members.
+ */
+struct stereoCorrespondence
+{
+	
+	// fundamentally this struct stores 2 floating point opencv points.
 	cv::Point2f left;
 	cv::Point2f right;
 
+	/*
+	 * @brief operator[]: returns a reference to the left and right point. 
+	 * 
+	 * @param int i: selectes either the left (0) or right (1) point.
+	 */
 	cv::Point2f& operator[](int i) {
 		assert(i==0 || i==1);
 		return i==0? left : right;
 	}
 	
+	/*
+	 * @brief operator[]: returns a const reference to the left and right point. 
+	 * 
+	 * @param int i: selectes either the left (0) or right (1) point.
+	 */
 	const cv::Point2f& operator[](int i) const {
 		assert(i==0 || i==1);
 		return i==0? left : right;
 	}
 	
+	/*
+	 * @brief operator=: The copy operator.
+	 * 
+	 * @param const stereoCorrespondence & in_: The copy link
+	 */
 	stereoCorrespondence& operator = (const stereoCorrespondence & in_)
 	{
 		left = in_.left;
-		left = in_.right;
+		right = in_.right;
 	}
-
 };
 
-
+/*
+ * @brief ContourList : this is a typedef of typedef std::vector< std::vector< cv::Point> >
+ *
+ */
 typedef std::vector< std::vector< cv::Point> > ContourList;
 
+
+/*
+ * @brief struct rotatedRectStereoCorr: a stereo pair of rotated rectangles 
+ *
+ * This can aso be used to store a stereo ellipse.
+ */
 struct rotatedRectStereoCorr
 {
+    
+    // This struct stores 2 rotated rectangles.
     cv::RotatedRect rectLeft;
     cv::RotatedRect rectRight;
 
+    /*
+	 * @brief operator[]: returns a reference to the left and right rotated rect. 
+	 * 
+	 * @param int i: selectes either the left (0) or right (1) RotatedRect.
+	 */
     cv::RotatedRect& operator[](int i)
     {
         assert(i == 0 || i == 1);
         return i == 0? rectLeft : rectRight;
     }
 
+    /*
+	 * @brief operator[]: returns a const reference to the left and right rotated rect. 
+	 * 
+	 * @param int i: selectes either the left (0) or right (1) RotatedRect.
+	 */
     const cv::RotatedRect& operator[](int i) const
     {
         assert(i == 0 || i == 1);
@@ -96,17 +142,32 @@ struct rotatedRectStereoCorr
     }
 };
 
+/*
+ * @brief struct RectStereoCorr: a stereo pair of rectangles 
+ *
+ */
 struct rectStereoCorr
 {
+    // The left and right rectangle pairs.
     cv::Rect rectLeft;
     cv::Rect rectRight;
 
+    /*
+	 * @brief operator[]: returns a reference to the left and right rect. 
+	 * 
+	 * @param int i: selectes either the left (0) or right (1) Rect.
+	 */
     cv::Rect& operator[](int i)
     {
         assert(i == 0 || i == 1);
         return i == 0 ? rectLeft : rectRight;
     }
 
+    /*
+	 * @brief operator[]: returns a const reference to the left and right rect. 
+	 * 
+	 * @param int i: selectes either the left (0) or right (1) Rect.
+	 */
     const cv::Rect& operator[](int i)  const
     {
         assert(i == 0 || i == 1);
@@ -114,25 +175,51 @@ struct rectStereoCorr
     }
 };
 
+
+/*
+ * @brief struct stereoImage: a stereo pair of images
+ *
+ */
 struct stereoImage
 {
+    
+    // The pair of images.
     cv::Mat view[2];
 
+    /*
+	 * @brief left(): returns the left image. 
+	 *
+	 */
     cv::Mat& left()
     {
         return view[0];
     }
+
+    /*
+	 * @brief right(): returns the right image. 
+	 *
+	 */
     cv::Mat& right()
     {
         return view[1];
     }
 
+    /*
+	 * @brief operator[]: returns a reference to the left or right image. 
+	 * 
+	 * @param int i: selectes either the left (0) or right (1) image.
+	 */
     cv::Mat& operator[](int i)
     {
         assert(i == 0 || i == 1);
         return view[i];
     }
 
+    /*
+	 * @brief operator[]: returns a const reference to the left or right image. 
+	 * 
+	 * @param int i: selectes either the left (0) or right (1) image.
+	 */
     const cv::Mat& operator[](int i) const
     {
         assert(i == 0 || i == 1);
