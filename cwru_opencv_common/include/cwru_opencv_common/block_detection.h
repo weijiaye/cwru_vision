@@ -71,7 +71,7 @@ int refineBlock(const cv::Mat&, std::vector<cv::Point2f> &, bool=false);
  * This param must be pre initialized.
  * @param bool display: display the results of the sorting.
  */
-void sortPtGrid(std::vector<cv::Point2f> &, cv::Size &, bool = true);
+void sortPtGrid(std::vector<cv::Point2f> &, const cv::Size &, bool = true);
 
 
 /** \brief exportPointFile(const char*,std::vector<std::vector<Point3f>> &) 
