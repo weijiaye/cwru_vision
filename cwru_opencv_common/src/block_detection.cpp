@@ -92,7 +92,7 @@ void detectBlock(const cv::Mat &inputImg, cv::Point seedPt, std::vector<cv::Poin
     corners = outputPts;
 }
 
-void sortPtGrid(std::vector<cv::Point2f> & corners, const cv::Size &gridInfo, bool xDir = true)
+void sortPtGrid(std::vector<cv::Point2f> & corners, const cv::Size &gridInfo, bool xDir)
 {
     // before running, verify the sizes match:
     if (corners.size() != gridInfo.area())
