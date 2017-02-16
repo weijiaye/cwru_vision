@@ -43,240 +43,222 @@
 #include <random>
 
 
-using namespace cv;
-
-
 struct rotationMatchingTest : testing::Test
 {
-    // member information:
-    std::default_random_engine generator;
+  // member information:
+  std::default_random_engine generator;
 
-    std::normal_distribution<double> distributionLin;
+  std::normal_distribution<double> distributionLin;
 
-    rotationMatchingTest(): generator(),
-    distributionLin(0.0, 0.75)
-    {
-    }
+  rotationMatchingTest(): generator(),
+  distributionLin(0.0, 0.75)
+  {}
 
-    ~rotationMatchingTest()
-    {
-    }
+  ~rotationMatchingTest()
+  {}
 };
 
 
+// This test validates that quaternions can be converted to rotations and back without error introduction.
 TEST_F(rotationMatchingTest, testRotations)
 {
-    // make a for loop to test random perturbations.
-    for (int ind(0); ind < 10000000; ind++)
+  // make a for loop to test random perturbations.
+  for (int ind(0); ind < 10000000; ind++)
+  {
+    // randomly generate a quaternion
+    double qX(distributionLin(generator));
+    double qY(distributionLin(generator));
+    double qZ(distributionLin(generator));
+    double qU(distributionLin(generator));
+
+    cv_rot::Quaternion qua_rotation;
+    qua_rotation.data[0] = abs(qU);
+    qua_rotation.data[1] = qX;
+    qua_rotation.data[2] = qY;
+    qua_rotation.data[3] = qZ;
+
+
+    // normalize the quaternion and convert it to a 3x3 rotation matrix
+    cv_rot::Quaternion Qn1(QuatNormalize(qua_rotation));
+
+    cv::Mat rot1 = cv_rot::QuatToMatrix(Qn1);
+
+    // then back to a quaternion
+    cv_rot::Quaternion Qn2(cv_rot::MatrixToQuat(rot1));
+
+    // and back to a rotation matrix again.
+    cv::Mat rot2 = cv_rot::QuatToMatrix(Qn2);
+
+    // error bound.
+    double eb(0.00001);
+
+    // compute the error:
+    double qE(QuatError(Qn1, Qn2));
+
+    ASSERT_NEAR(qE, 0.0, eb);
+
+    for (int i(0); i < 9; i++)
     {
-		double qX(distributionLin(generator));
-		double qY(distributionLin(generator));
-		double qZ(distributionLin(generator));
-		double qU(distributionLin(generator));
-
-
-    	cv_rot::Quaternion qua_rotation;
-		qua_rotation.data[0] = abs(qU);
-		qua_rotation.data[1] = qX;
-		qua_rotation.data[2] = qY;
-        qua_rotation.data[3] = qZ;
-
-
-        cv_rot::Quaternion Qn1(QuatNormalize(qua_rotation));
-
-        Mat rot1 = cv_rot::QuatToMatrix(Qn1);
-
-        cv_rot::Quaternion Qn2(cv_rot::MatrixToQuat(rot1));
-
-        Mat rot2 = cv_rot::QuatToMatrix(Qn2);
-
-        double eb(0.00001);
-
-        // compute the error:
-        double qE(QuatError(Qn1, Qn2));
-
-
-
-        ASSERT_NEAR(qE, 0.0, eb);
-
-
-        /*
-        for (int i(0); i < 4; i++)
-
-        {
-            //std::cout << i << std::endl;
-            ASSERT_NEAR(Qn1.data[i], Qn2.data[i], eb);
-        }
-        */
-
-        for (int i(0); i < 9; i++)
-        {
-            int row(i%3);
-            int col(i/3);
-            ASSERT_NEAR(rot1.at<double>(row, col), rot2.at<double>(row, col), eb);
-        }
+      int row(i%3);
+      int col(i/3);
+      ASSERT_NEAR(rot1.at<double>(row, col), rot2.at<double>(row, col), eb);
     }
+  }
 }
 
-
-/*TEST_F(rotationMatchingTest, testDeriv)
+// @TODO(BIOCUBED) Itendify the test purpose
+TEST_F(rotationMatchingTest, testDeriv)
 {
-    // make a for loop to test random perturbations.
-    for (int ind(0); ind < 1000; ind++)
+  // make a for loop to test random perturbations.
+  for (int ind(0); ind < 1000; ind++)
+  {
+    double qX(distributionLin(generator));
+    double qY(distributionLin(generator));
+    double qZ(distributionLin(generator));
+    double qU(distributionLin(generator));
+
+
+    cv_rot::Quaternion qua_rotation;
+    qua_rotation.data[0] = abs(qU);
+    qua_rotation.data[1] = qX;
+    qua_rotation.data[2] = qY;
+    qua_rotation.data[3] = qZ;
+
+
+    cv_rot::Quaternion Qn1(QuatNormalize(qua_rotation));
+
+
+    cv::Mat jac;
+    cv::Mat rot1 = cv_rot::QuatToMatrix(Qn1, jac);
+
+    std::cout << rot1 << std::endl;
+    double eb(0.00001);
+    double del(0.00000001);
+
+    for (int i(0); i < 4; i++)
     {
-        double qX(distributionLin(generator));
-        double qY(distributionLin(generator));
-        double qZ(distributionLin(generator));
-        double qU(distributionLin(generator));
-
-
-        cv_rot::Quaternion qua_rotation;
-        qua_rotation.data[0] = abs(qU);
-        qua_rotation.data[1] = qX;
-        qua_rotation.data[2] = qY;
-        qua_rotation.data[3] = qZ;
-
-
-        cv_rot::Quaternion Qn1(QuatNormalize(qua_rotation));
-
-
-        Mat jac;
-        Mat rot1 = cv_rot::QuatToMatrix(Qn1, jac);
-
-        std::cout << rot1 << std::endl;
-        double eb(0.00001);
-        double del(0.00000001);
-
-        for (int i(0); i < 4; i++)
-        {
-            std::cout << Qn1.data[i] << std::endl;
-        }
-
-        for (int i(0); i < 4; i++)
-        {
-
-            cv_rot::Quaternion QnL(Qn1);
-            cv_rot::Quaternion QnH(Qn1);
-
-            QnL.data[i] -= del;
-            QnH.data[i] += del;
-
-            cv_rot::Quaternion QnLp(QuatNormalize(QnL));
-            cv_rot::Quaternion QnHp(QuatNormalize(QnH));
-
-            double delL(Qn1.data[i]-QnLp.data[i]);
-            double delH(QnHp.data[i]-Qn1.data[i]);
-
-
-            Mat rotH = cv_rot::QuatToMatrix(QnH);
-            Mat rotL = cv_rot::QuatToMatrix(QnL);
-
-            Mat delR = (rotH-rotL)/(delL+delH);
-            std::cout << jac << std::endl;
-            std::cout << delR << std::endl;
-            for (int k(0); k < 9; k++)
-            {
-                int row(k%3);
-                int col(k/3);
-                ASSERT_NEAR(delR.at<double>(col, row), jac.at<double>(k, i), eb);
-            }
-        }
+        std::cout << Qn1.data[i] << std::endl;
     }
-} */
 
-/*
+    for (int i(0); i < 4; i++)
+    {
+      cv_rot::Quaternion QnL(Qn1);
+      cv_rot::Quaternion QnH(Qn1);
+
+      QnL.data[i] -= del;
+      QnH.data[i] += del;
+
+      cv_rot::Quaternion QnLp(QuatNormalize(QnL));
+      cv_rot::Quaternion QnHp(QuatNormalize(QnH));
+
+      double delL(Qn1.data[i]-QnLp.data[i]);
+      double delH(QnHp.data[i]-Qn1.data[i]);
+
+
+      cv::Mat rotH = cv_rot::QuatToMatrix(QnH);
+      cv::Mat rotL = cv_rot::QuatToMatrix(QnL);
+
+      Mat delR = (rotH-rotL)/(delL+delH);
+      std::cout << jac << std::endl;
+      std::cout << delR << std::endl;
+      for (int k(0); k < 9; k++)
+      {
+        int row(k%3);
+        int col(k/3);
+        ASSERT_NEAR(delR.at<double>(col, row), jac.at<double>(k, i), eb);
+      }
+    }
+  }
+}
+
+// @TODO(BIOCUBED) Itendify the test purpose
 TEST_F(rotationMatchingTest, testConv)
 {
-    // Import image
-    
-    
+  for (int ind(0); ind < 10; ind++)
+  {
+    double qX1(distributionLin(generator));
+    double qY1(distributionLin(generator));
+    double qZ1(distributionLin(generator));
+    double qU1(distributionLin(generator));
 
-    // make a for loop to test random perturbations.
-    for (int ind(0); ind < 10; ind++)
+
+    double qX2(distributionLin(generator));
+    double qY2(distributionLin(generator));
+    double qZ2(distributionLin(generator));
+    double qU2(distributionLin(generator));
+
+    cv_rot::Quaternion qua_start;
+    qua_start.data[0] = abs(qU1);
+    qua_start.data[1] = qX1;
+    qua_start.data[2] = qY1;
+    qua_start.data[3] = qZ1;
+
+
+    cv_rot::Quaternion qua_goal;
+    qua_goal.data[0] = abs(qU2);
+    qua_goal.data[1] = qX2;
+    qua_goal.data[2] = qY2;
+    qua_goal.data[3] = qZ2;
+
+
+    cv_rot::Quaternion Qg(QuatNormalize(qua_goal));
+    cv_rot::Quaternion Qs(QuatNormalize(qua_start));
+
+    // instead of solving for R directly, solve using a random point:
+
+    cv::Mat pointArray(3, 2, CV_64FC1);
+    pointArray.at<double> (0, 0) = distributionLin(generator);
+    pointArray.at<double> (1, 0) = distributionLin(generator);
+    pointArray.at<double> (2, 0) = distributionLin(generator);
+    pointArray.at<double> (0, 1) = distributionLin(generator);
+    pointArray.at<double> (1, 1) = distributionLin(generator);
+    pointArray.at<double> (2, 1) = distributionLin(generator);
+
+    cv::Mat jac;
+    cv::Mat r_g = cv_rot::QuatToMatrix(Qg);
+
+    cv::Mat r_s = cv_rot::QuatToMatrix(Qs, jac);
+
+    cv::Mat p_g = r_g*pointArray;
+
+    double eb(0.00001);
+    double del(0.05);
+    std::cout << jac << std::endl;
+    for ( int i(0); i < 10; i++)
     {
-        double qX1(distributionLin(generator));
-        double qY1(distributionLin(generator));
-        double qZ1(distributionLin(generator));
-        double qU1(distributionLin(generator));
+      cv::Mat dCdr_s, dCdp;
+      cv::matMulDeriv(r_s, pointArray, dCdr_s, dCdp);
 
+      cv::Mat p_s = r_s*pointArray;
 
-        double qX2(distributionLin(generator));
-        double qY2(distributionLin(generator));
-        double qZ2(distributionLin(generator));
-        double qU2(distributionLin(generator));
+      cv::Mat jac_q = dCdr_s * jac;
 
-        cv_rot::Quaternion qua_start;
-        qua_start.data[0] = abs(qU1);
-        qua_start.data[1] = qX1;
-        qua_start.data[2] = qY1;
-        qua_start.data[3] = qZ1;
+      cv::Mat e_p = p_g - p_s;
 
+      std::cout << jac_q.size() << std::endl;
 
-        cv_rot::Quaternion qua_goal;
-        qua_goal.data[0] = abs(qU2);
-        qua_goal.data[1] = qX2;
-        qua_goal.data[2] = qY2;
-        qua_goal.data[3] = qZ2;
+      double error = norm(p_s-p_g);
 
+      std::cout << error << std::endl;
 
-        cv_rot::Quaternion Qg(QuatNormalize(qua_goal));
-        cv_rot::Quaternion Qs(QuatNormalize(qua_start));
+      if (error < eb) break;
 
-        // instead of solving for R directly, solve using a random point:
+      cv::Mat dq = jac_q.inv(DECOMP_SVD)*e_p;
 
-        Mat pointArray(3, 2, CV_64FC1);
-        pointArray.at<double> (0, 0) = distributionLin(generator);
-        pointArray.at<double> (1, 0) = distributionLin(generator);
-        pointArray.at<double> (2, 0) = distributionLin(generator);
-        pointArray.at<double> (0, 1) = distributionLin(generator);
-        pointArray.at<double> (1, 1) = distributionLin(generator);
-        pointArray.at<double> (2, 1) = distributionLin(generator);
-
-        Mat jac;
-        Mat r_g = cv_rot::QuatToMatrix(Qg);
-
-        Mat r_s = cv_rot::QuatToMatrix(Qs, jac);
-
-        Mat p_g = r_g*pointArray;
-
-        double eb(0.00001);
-        double del(0.05);
-        std::cout << jac << std::endl;
-        for ( int i(0); i < 10; i++)
-        {
-            Mat dCdr_s, dCdp;
-            cv::matMulDeriv(r_s, pointArray, dCdr_s, dCdp);
-
-            Mat p_s = r_s*pointArray;
-
-            Mat jac_q = dCdr_s * jac;
-
-            Mat e_p = p_g - p_s;
-
-            std::cout << jac_q.size() << std::endl;
-
-            double error = norm(p_s-p_g);
-
-            std::cout << error << std::endl;
-
-            if (error < eb) break;
-
-            Mat dq = jac_q.inv(DECOMP_SVD)*e_p;
-
-            for (int j(0); j < 4; j++)
-            {
-                Qs.data[i] += dq.at<double> (j, 0)*del;
-            }
-            Qs = QuatNormalize(Qs);
-            r_s = cv_rot::QuatToMatrix(Qs, jac);
-        }
-        ASSERT_TRUE(true);
+      for (int j(0); j < 4; j++)
+      {
+          Qs.data[i] += dq.at<double> (j, 0)*del;
+      }
+      Qs = QuatNormalize(Qs);
+      r_s = cv_rot::QuatToMatrix(Qs, jac);
     }
+    ASSERT_TRUE(true);
+  }
 }
-*/
+
 
 int main(int argc, char** argv)
 {
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

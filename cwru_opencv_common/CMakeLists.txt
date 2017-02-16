@@ -12,11 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+  roslint
 )
 
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 SET(LIB_TYPE STATIC) 
 
+roslint_cpp()
 
 add_service_files(DIRECTORY srv  
 FILES image_label.srv

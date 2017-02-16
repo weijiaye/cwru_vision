@@ -36,53 +36,37 @@
  */
 
 
-#ifndef FIDUCIALCIRCLES_H
-#define FIDUCIALCIRCLES_H
+#ifndef CWRU_OPENCV_COMMON_CIRCLE_DETECTION_H
+#define CWRU_OPENCV_COMMON_CIRCLE_DETECTION_H
 // Opencv Includes
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 
 
-/*
- * This function generates an ellipse based on an initial seed point.
- */
-cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt);
-
 namespace cv_circle
 {
 
-
-
-//Uses a single point to grow a list of ellipses
-//rotatedRectStereoCorr growEllipse(const stereoImage &, stereoCorrespondence, Scalar &);
-
-
- /*
-  * growEllipseImage: grows an ellipse from a single point and identifies the color region.
-  */
-//  RotatedRect growEllipseImage(const Mat & inputImgPair , Point2f startPt, Scalar &meanColor,Scalar &lowColor,Scalar &highColor );
-
-
- /*
-  * growEllipseBW: grows a Black ellipse on a white background using region growth.
-  */
-//  RotatedRect growEllipseBW(const Mat &, Point2f);
-
-  /** \brief void exportEllipseFile(const char*,std::vector<RotatedRect> &): This function exports a list of circles.
-   *
-   *
-   */
-//  void exportEllipseFile(const char*,std::vector<RotatedRect> &);
-
-
-
-
+/**
+ * @brief fill an ellipse from a seed point. 
+ *
+ * @param const cv::Mat & inputImg the black and white input image.
+ * @param cv::Point seedPt a point inside the ellipse.
+ *
+ * This function implicitly assumes that the image is BW and that the ellipses are black.
+ */
+cv::RotatedRect fillEllipseBW(const cv::Mat & inputImg, cv::Point seedPt);
 
 /*
  * This function optimizes an ellipse based on an initial seed ellipse.
+ *
+ * @param const cv::Mat & inputImg, a black and white input image.
+ * @param cv::RotatedRect &ellipse The ellipse that is being optimized.
+ * @param int padding @TODO(biocubed) identify the purpose of the padding.
+ *
+ * This function optimizes the ellipse from an initial ellipse guess.
  */
 void optimizeEllipseBW(const cv::Mat & inputImg, cv::RotatedRect &ellipse, int padding);
 
-}; //  cv_circle
+};  // namespace cv_circle
 
-#endif
+#endif  // CWRU_OPENCV_COMMON_CIRCLE_DETECTION_H
