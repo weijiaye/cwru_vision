@@ -12,7 +12,7 @@
 #include <cwru_opencv_common/opencv_ui.h>
 #include <cv_bridge/cv_bridge.h>
 #include <cwru_opencv_common/image_label.h>
-#include <gtest/gtest.h>
+#include <image_transport/image_transport.h>
 
 /**
  * \brief This class is a manual labeling server.
@@ -37,23 +37,15 @@ public:
     bool manualLabelingCallback(cwru_opencv_common::image_label::Request& request,
                                 cwru_opencv_common::image_label::Response& response);
 
+
+    /**
+     * \brief image subscription callback.
+     */
+    void newImageCallback(const sensor_msgs::ImageConstPtr& msg);
+
 protected:
 
-    /**
-     * \brief Grow blob from seed
-     */
-    int growFromSeedRaw(const cv::Mat& rawImage, cv::Mat& labeledImage, cv::Point2i seedPoint);
-
-    /**
-     * \brief Grow from seed
-     */
-    int growFromSeed(const cv::Mat& segmentedImage, cv::Mat& labeledImage, cv::Point2i seedPoint);
-
-    /**
-     * \brief Flood fill segmentation
-     */
-    int catheterFloodFillSegmentation(const cv::Mat & inputImage, cv::Mat &outputImage, cv::Point2i seedPoint, cv::Rect regionIn);
-
+ 
     /**
      * \brief ROS node handle
      */
@@ -64,6 +56,34 @@ protected:
      */
     ros::ServiceServer manualLabelingServer_;
 
+    /**
+     * \brief image transport object.
+     */
+    image_transport::ImageTransport it;
+
+    /**
+     * \brief local image def.
+     */
+    cv::Mat localImage;
+
+
+    /**
+     * \brief image point
+     */
+    cv::Point imagePt;
+
+    /**
+     * \brief is an image ready
+     */
+    bool imageRdy;
+
+
+    image_transport::Subscriber img_sub;
+
+
+    geometry_msgs::Polygon ptList;
+
+
 };
 
-#endif //CWRU_OPENCV_COMMON_MANUAL_LABELING_H
+#endif // CWRU_OPENCV_COMMON_MANUAL_LABELING_H

@@ -1,0 +1,36 @@
+\documentclass[tikz,border=10mm]{standalone}
+\usetikzlibrary{calc}
+
+
+
+\def\xw{4}
+\def\yw{6}
+\def\rad{2.5mm}
+
+\def\paperxw{2}
+\def\paperyw{2}
+
+\begin{document}
+\begin{tikzpicture}[scale=1]
+
+
+% This file draws a bunch of circles
+
+
+\draw ( 0mm ,0mm) rectangle (50.0 mm,70.0  mm);
+
+\foreach \b in {0,...,\xw}{
+   \foreach \c in {0,...,\yw}{
+      \fill[black] (\b*10.0mm+5mm,\c*10mm+5mm) circle [radius=\rad] ;
+    }
+}
+
+
+
+
+
+
+
+\end{tikzpicture}
+\end{document}
+\geometry{letterpaper}
