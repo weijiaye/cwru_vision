@@ -47,71 +47,159 @@
 #include <opencv2/opencv.hpp>
 
 
-namespace cv_3d{
-
-    /* Three dimensional model structs */
-
-    /**
-     * @brief This is a sphere in 3d space
-     */
-    struct sphere{
-
-        cv::Point3d center;
-        double radius;
-
-        // constructor
-        sphere(const cv::Point3d &center_=cv::Point3d(0.0,0.0,0.0) , double radius_ = 1.0 ):
-        center(center_),
-        radius(radius_)
-        {
-        }
-
-    };
-
-    /**
-     * @brief This is a cylinder in 3d space
-     */
-struct cylinder
+namespace cv_3d
 {
-    cv::Point3d center;
-    double theta;
-    double phi;
-    double height;
-    double radius;
-    // constructor
-    cylinder(const cv::Point3d& center_ = cv::Point3d(0.0, 0.0, 0.0), double theta_ = 0.0,
-             double phi_ = 0.0, double height_ = 0.0, double radius_ = 0.0):
-    center(center_),
-    theta(theta_),
-    phi(phi_),
-    height(height_),
-    radius(radius_)
+
+  /**
+   * @brief This is a sphere in 3D space.
+   */
+  struct sphere
+  {
+
+    cv::Point3d center; /**< The center of the sphere. */
+
+    double radius;      /**< The radius of the sphere. */
+
+    /**
+     * @brief The constructor.
+     * @param center_ The center of the sphere.
+     * @param radius_ The radius of the sphere.
+     */
+    sphere(const cv::Point3d &center_=cv::Point3d(0.0,0.0,0.0) , double radius_ = 1.0 ):
+      center(center_),
+      radius(radius_)
     {
     }
-};
 
-    cylinder baseCylinder();
+  };
 
+  /**
+   * @brief This is a cylinder in 3D space.
+   */
+  struct cylinder
+  {
 
-    void iterateSphere_3d(const cv::Mat & , sphere & , const cv::Mat& , const cv::Mat&);
+    cv::Point3d center; /**< The center of the cylinder. */
 
+    double theta;       /**< The azimuth angle in the polar coordinates. */
 
-    cv::Rect renderSphere(cv::Mat &,const sphere& , const cv::Mat &, cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray(), const cv::Scalar& = cv::Scalar(255, 255, 255)  );
-    cv::RotatedRect renderCylinder(cv::Mat &,const cylinder&, const cv::Mat &,cv::OutputArray = cv::noArray(),  cv::OutputArray = cv::noArray(), const cv::Scalar& = cv::Scalar(255, 255, 255));
+    double phi;         /**< The zenith angle in the polar coordinates. */
 
-    double optimizeSphere(sphere &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false  );
+    double height;      /**< The height of the cylinder */
 
-    double optimizeCylinder(cylinder &, const cv::Mat&, const cv::Mat&, const cv::Mat& , int, double, bool = false );
+    double radius;      /**< The radius of the cylinder */
 
     /**
-     * @brief compute the mirror normal from theta and phi with an option jacobian.
+     * @brief The constructor.
+     * @param center_ The center of the cylinder.
+     * @param theta_  The azimuth angle in the polar coordinates.
+     * @param phi_    The zenith angle in the polar coordinates.
+     * @param height_ The height of the cylinder.
+     * @param radius_ The radius of the cylinder.
      */
-    cv::Point3d computeNormalFromSpherical(double , double , cv::OutputArray = cv::noArray());
+    cylinder(const cv::Point3d& center_ = cv::Point3d(0.0, 0.0, 0.0), double theta_ = 0.0,
+             double phi_ = 0.0, double height_ = 0.0, double radius_ = 0.0):
+      center(center_),
+      theta(theta_),
+      phi(phi_),
+      height(height_),
+      radius(radius_)
+    {
+    }
+  };
 
-    /**
-     * @brief compute the theta and phi from the mirror normal
-     */
-    cv::Point2d computeSphericalFromNormal(cv::Point3d);
+  /**
+   * Optimize position of the sphere against a segmented image of the sphere.
+   * TODO: Does not have a definition. Delete?
+   *
+   * @param segmentedImage    The segmented image.
+   * @param sphereIn          The sphere to be optimized.
+   * @param projectionLeft    The projection matrix of the left camera.
+   * @param projectionRight   The projection matrix of the right camera.
+   */
+  void iterateSphere_3d(const cv::Mat &segmentedImage , sphere &sphereIn , const cv::Mat& , const cv::Mat&);
+
+  /**
+   * @brief Draw a sphere on the image.
+   *
+   * @param inputImage The image which the sphere will be drawn on.
+   * @param sphereIn   The sphere to be drawn.
+   * @param projection The camera projection matrix.
+   * @param centerPt   A floating point 3-tuple (x, y, r), where (x, y) is the center of the sphere in the image
+   *                   in pixels, and r is the radius of the rendered sphere in pixels.
+   * @param jacobian   A 2-by-3 matrix that maps changes of position of the sphere relative to the camera
+   *                   to the changes of position the rendered sphere in the image.
+   * @param color      Optional color of the drawn sphere. Default is 8-bit white.
+   * @return The minimal bounding box containing the sphere.
+   */
+  cv::Rect renderSphere(cv::Mat &inputImage, const sphere &sphereIn, const cv::Mat &projection,
+    cv::OutputArray centerPt = cv::noArray(), cv::OutputArray jacobian = cv::noArray(),
+    const cv::Scalar &color = cv::Scalar(255, 255, 255));
+
+  /**
+   * @brief Draw a cylinder on the image.
+   *
+   * @param  inputImage The image which the cylinder will be drawn on.
+   * @param  cylinderIn The cylinder to be drawn on the image.
+   * @param  projection The camera projection matrix.
+   * @param  tips       A floating point 6-tuple (x1, y1, r1, x2, y2, r2), where (x1, y1) and (x2, y2) are the center
+   *                    of the two ends of the rendered cylinder in pixels, r1 and r2 are the radius of the two ends
+   *                    in pixels.
+   * @param  jacobian   A 4-by-5 matrix that maps the changes in the configuration of the cylinder (x, y, z, theta, phi)
+   *                    to the changes of the positions of the two ends of the rendered cylinder.
+   * @param  color      Optional color of the drawn cylinder. Default is 8-bit white.
+   * @return The minimal bounding box containing the cylinder.
+   */
+  cv::RotatedRect renderCylinder(cv::Mat &inputImage, const cylinder &cylinderIn, const cv::Mat &projection,
+    cv::OutputArray tips = cv::noArray(), cv::OutputArray jacobian = cv::noArray(),
+    const cv::Scalar& color = cv::Scalar(255, 255, 255));
+
+  /**
+   * @brief Optimize the location of the sphere such that it fits the blob on the segment image.
+   *
+   * @param  sphereIn        The sphere whose position will be optimized.
+   * @param  segmentedImage  The segmented image.
+   * @param  projectionLeft  The projection matrix of the left camera.
+   * @param  projectionRight The projection matrix of the right camera.
+   * @param  kWidth          Padding of bounding box. Net padding is 2 * kWidth
+   * @param  kVar            The variance of the Gaussian used to blurred the rendered image for convolution.
+   * @param  displayPause    Pause to display intermediary results.
+   * @return                 Distance between the before and the after spheres.
+   */
+  double optimizeSphere(sphere &sphereIn, const cv::Mat &segmentedImage, const cv::Mat &projectionLeft,
+    const cv::Mat &projectionRight , int kWidth, double kVar, bool displayPause = false);
+
+  /**
+   * @brief Optimize the pose of the cylinder such that it fits the blob on the segmented image.
+   * @param  cylinderIn      The cylinder whose configuration will be optimized.
+   * @param  segmentedImage  The segmented image.
+   * @param  projectionLeft  The projection matrix of the left camera.
+   * @param  projectionRight The projection matrix of the right camera.
+   * @param  kWidth          Padding of bounding box. Net padding is 2 * kWidth
+   * @param  kVar            The variance of the Gaussian used to blurred the rendered image for convolution.
+   * @param  displayPause    Pause to display intermediary results.
+   * @return                 Distance between the before and the after cylinders.
+   */
+  double optimizeCylinder(cylinder &cylinderIn, const cv::Mat &segmentedImage, const cv::Mat &projectionLeft,
+    const cv::Mat &projectionRight , int kWidth, double kVar, bool displayPause= false);
+
+  /**
+   * @brief Compute rectangular coordinates of an R^3 unit vector in rectangular coordinates.
+   *
+   * @param theta     The azimuth angle.
+   * @param phi       The zenith angle.
+   * @param jacobian  How the vector changes with theta and phi.
+   * @return          The unit vector rectangular coordinates.
+   */
+  cv::Point3d computeNormalFromSpherical(double theta, double phi, cv::OutputArray jacobian = cv::noArray());
+
+  /**
+   * @brief Compute spherical coordinates of an R^3 unit vector in spherical coordinates.
+   *
+   * @param unitVector  An R^3 unit vector in rectangular coordinates.
+   * @return            The unit vector in polar coordinates (azimuth and zenith).
+   */
+  cv::Point2d computeSphericalFromNormal(cv::Point3d unitVector);
 };
 
 #endif
