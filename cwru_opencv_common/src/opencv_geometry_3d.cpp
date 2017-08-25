@@ -204,22 +204,28 @@ namespace cv_3d
 
             // Draw the trapezoid.
             fillConvexPoly(inputImage, corners, 4, color, CV_AA);
-
-            // Calculate the position and radius of the two ends.
-            if (tips.needed())
-            {
-                tips.create(6, 1, CV_64FC1);
-                Mat tipMat(tips.getMat());
-                tipMat.at<double>(0) = pt0.x;
-                tipMat.at<double>(1) = pt0.y;
-                tipMat.at<double>(2) = radEst0;
-                tipMat.at<double>(3) = pt1.x;
-                tipMat.at<double>(4) = pt1.y;
-                tipMat.at<double>(5) = radEst1;
-            }
         }
 
-        // TODO: Should add the alternative case when the projected length is shorter than the radius.
+        // Otherwise, draw a circle.
+        else
+        {
+            Point center = 0.5 * (pt0 + pt1);
+            int radius = static_cast<int>(0.5 * (radEst0 + radEst1));
+            circle(inputImage, center, radius, color, -1);
+        }
+
+        // Calculate the position and radius of the two ends.
+        if (tips.needed())
+        {
+            tips.create(6, 1, CV_64FC1);
+            Mat tipMat(tips.getMat());
+            tipMat.at<double>(0) = pt0.x;
+            tipMat.at<double>(1) = pt0.y;
+            tipMat.at<double>(2) = radEst0;
+            tipMat.at<double>(3) = pt1.x;
+            tipMat.at<double>(4) = pt1.y;
+            tipMat.at<double>(5) = radEst1;
+        }
 
         // Calculate the Jacobian if needed.
         if (jac.needed())
